@@ -4,84 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Website</title>
+    <title>Quản lý Gia phả</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
-
-        .container {
-            width: 80%;
-            margin: 0 auto;
-        }
-
-        header {
-            background-color: #333;
-            color: #fff;
-            padding: 20px 0;
-        }
-
-        .logo {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .nav-links {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .nav-links li {
-            display: inline;
-            margin-right: 20px;
-        }
-
-        .nav-links li:last-child {
-            margin-right: 0;
-        }
-
-        .nav-links li a {
-            color: #fff;
-            text-decoration: none;
-        }
-
-        .nav-links li a:hover {
-            text-decoration: underline;
-        }
-
-        main {
-            padding: 20px 0;
-        }
-    </style>
 </head>
 
 <body>
     <header>
-        <div class="container">
-            <h1 class="logo">My Website</h1>
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="#">Home</a></li>
-                    <li><a href="#">Features</a></li>
-                    <li><a href="#">About</a></li>
-                    <li><a href="#">Profile</a></li>
-                    <li><button id="logoutBtn">Logout</button></li>
-                </ul>
-            </nav>
-        </div>
+        <h1>Quản lý Gia phả</h1>
+        <nav>
+            <ul>
+                <li><a href="#">Trang chủ</a></li>
+                <li><a href="#">Gia phả</a></li>
+                <li><a href="#">Thành viên</a></li>
+                <li><a href="#">Liên hệ</a></li>
+                <li style="margin-left: 50%;"><button id="logoutBtn">Logout</button></li>
+            </ul>
+        </nav>
     </header>
+    <section class="hero">
+        <h2>Xây dựng và duy trì Gia phả của bạn</h2>
+        <p>Ứng dụng quản lý gia phả giúp bạn tổ chức thông tin về gia đình của mình một cách dễ dàng và hiệu quả.</p>
+        <li><button class="btn" onclick="showSignupModal()">Bắt đầu ngay</button></li>
+    </section>
 
-    <main>
-        <div class="container">
-            <div class="user-info">
-                <h2>Welcome to Your User Page</h2>
-                <p>This is your personalized user page. Feel free to customize it as you like!</p>
-            </div>
-        </div>
-    </main>
+    <footer>
+        <p>Bản quyền © 2024 Quản lý Gia phả</p>
+    </footer>
 
     <script>
         document.getElementById("logoutBtn").addEventListener("click", function () {

@@ -1,8 +1,10 @@
 function showLoginModal() {
+    document.getElementById("signupModal").style.display = "none";
     document.getElementById("loginModal").style.display = "block";
 }
 
 function showSignupModal() {
+    document.getElementById("loginModal").style.display = "none";
     document.getElementById("signupModal").style.display = "block";
 }
 

@@ -4,26 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Website</title>
+    <title>Quản lý Gia phả</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <header>
-        <div class="container">
-            <h1>Welcome to My Website</h1>
-            <nav>
-                <ul>
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li style="margin-left: 60%;"><button onclick="showLoginModal()">Login</button></li>
-                    <li><button onclick="showSignupModal()">Sign Up</button></li>
-                </ul>
-            </nav>
-        </div>
+        <h1>Quản lý Gia phả</h1>
+        <nav>
+            <ul>
+                <li><a href="#">Trang chủ</a></li>
+                <li><a href="#">Gia phả</a></li>
+                <li><a href="#">Thành viên</a></li>
+                <li><a href="#">Liên hệ</a></li>
+                <li style="margin-left: 50%;"><button onclick="showLoginModal()">Login</button></li>
+                <li><button onclick="showSignupModal()">Sign Up</button></li>
+            </ul>
+        </nav>
     </header>
-
-    <!-- Login Modal -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
@@ -34,6 +32,7 @@
                 <input type="password" id="password" name="password" placeholder="Password" required>
                 <input type="submit" value="Login">
                 <p id="errorMessage" style="color: red;"></p>
+                <p style="margin-left: 70%;"><a onclick="showSignupModal()">Chưa có tài khoản</a></p>
             </form>
         </div>
     </div>
@@ -50,40 +49,17 @@
                 <input type="submit" value="Sign Up">
                 <p id="registerMessage" style="color: red;"></p>
             </form>
+            <p style="margin-left: 70%;"><a onclick="showLoginModal()">Đã có tài khoản</a></p>
         </div>
     </div>
-
-    <section id="features">
-        <div class="container">
-            <h2>Features</h2>
-            <div class="feature">
-                <h3>Feature 1</h3>
-                <p>Description of Feature 1</p>
-            </div>
-            <div class="feature">
-                <h3>Feature 2</h3>
-                <p>Description of Feature 2</p>
-            </div>
-            <div class="feature">
-                <h3>Feature 3</h3>
-                <p>Description of Feature 3</p>
-            </div>
-        </div>
+    <section class="hero">
+        <h2>Xây dựng và duy trì Gia phả của bạn</h2>
+        <p>Ứng dụng quản lý gia phả giúp bạn tổ chức thông tin về gia đình của mình một cách dễ dàng và hiệu quả.</p>
+        <li><button class="btn" onclick="showSignupModal()">Bắt đầu ngay</button></li>
     </section>
 
-    <section id="about">
-        <div class="container">
-            <h2>About Us</h2>
-            <p>We are a passionate team dedicated to creating amazing websites.</p>
-        </div>
-    </section>
-
-    <footer id="contact">
-        <div class="container">
-            <h2>Contact Us</h2>
-            <p>Email: contact@website.com</p>
-            <p>Phone: 123-456-7890</p>
-        </div>
+    <footer>
+        <p>Bản quyền © 2024 Quản lý Gia phả</p>
     </footer>
 
     <script src="scripts.js"></script>
