@@ -5,7 +5,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Gia phả</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin-right: 20px;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .hero {
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            color: #000000;
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .hero h2 {
+            margin-top: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
@@ -17,14 +88,13 @@
                 <li><a href="#">Gia phả</a></li>
                 <li><a href="#">Thành viên</a></li>
                 <li><a href="#">Liên hệ</a></li>
-                <li style="margin-left: 50%;"><button id="logoutBtn">Logout</button></li>
+                <li style="margin-left: 50%;"><button id="logoutBtn" class="btn">Logout</button></li>
             </ul>
         </nav>
     </header>
     <section class="hero">
         <h2>Xây dựng và duy trì Gia phả của bạn</h2>
         <p>Ứng dụng quản lý gia phả giúp bạn tổ chức thông tin về gia đình của mình một cách dễ dàng và hiệu quả.</p>
-        <li><button class="btn" onclick="showSignupModal()">Bắt đầu ngay</button></li>
     </section>
 
     <footer>
