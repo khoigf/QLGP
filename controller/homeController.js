@@ -1,82 +1,74 @@
 var database=require('../config/database')
+const jwt = require('jsonwebtoken');
 const getHomepage = (req,res)=>{
     //process data 
     //get model
     res.render('homepage.ejs')
 }
 
-const getKhoi = (request,response)=>{
-    respons.render('sample.ejs')
-}
-const postLogin = (request, response, next)=>{
+const postLogin = (request, response, next) => {
+    const { username, password } = request.body;
 
-    var user_name = request.body.username;
-    var user_password = request.body.password;
-
-    if(user_name && user_password) {
-        query = `
-        SELECT * FROM account
-        WHERE username = "${user_name}"
-        `;
-        database.query(query, function(error, data) {
-            if(data.length > 0) {
-                if(data[0].password == user_password) {
-                    response.status(200).json({redirectUrl: `/user/${data[0].userId}`});
-                } else {
-                    response.status(400).json({message: 'Mật khẩu không đúng'});
-                }
-            } else {
-                response.status(400).json({message: 'Tên đăng nhập không đúng'});
-            }
-        });
-    } else {
-        response.status(400).json({message: 'Hãy nhập tên đăng nhập và mật khẩu'});
+    if (!username || !password) {
+        return response.status(400).json({ message: 'Vui lòng nhập tên đăng nhập và mật khẩu' });
     }
-}
-const postResigter = (request, response, next) => {
-    var name = request.body.username1;
-    var pass = request.body.password1; 
 
-    var query1 = `SELECT * FROM account`;
-
-    database.query(query1, function(error, data) {
-        if(error) {
-            response.status(500).json({ error: 'Internal Server Error' });
-        } else {
-            var flag = true;
-            var id = data.length + 1;
-            for(var ctr = 0; ctr < data.length; ctr++) {
-                if(data[ctr].username == name) {
-                    flag = false;
-                    break;
-                }
-            }
-
-            if(!flag) {
-                response.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
-            } else {
-                var query2 = `INSERT INTO account 
-                              VALUES("${id}", "${name}", "${pass}")`;
-
-                database.query(query2, function(error, data) {
-                    if(error) {
-                        response.status(500).json({ error: 'Internal Server Error' });
-                    } else {
-                        response.status(200).json({ message: 'Tạo tài khoản thành công' });
-                    }
-                });
-            }
+    const query = `
+        SELECT * FROM account
+        WHERE username = ?
+    `;
+    database.query(query, [username], function(error, data) {
+        if (error) {
+            return response.status(500).json({ error: 'Lỗi máy chủ nội bộ' });
         }
+
+        if (data.length === 0) {
+            return response.status(400).json({ message: 'Tên đăng nhập không tồn tại' });
+        }
+
+        const user = data[0];
+        if (user.password !== password) {
+            return response.status(400).json({ message: 'Mật khẩu không đúng' });
+        }
+
+        const token = jwt.sign({ username: user.username, userId: user.userId }, 'your_secret_key', { expiresIn: '1h' });
+        response.status(200).json({ token });
     });
-}
+};
+
+const postRegister = (request, response, next) => {
+    const { username, password } = request.body;
+
+    if (!username || !password) {
+        return response.status(400).json({ message: 'Vui lòng nhập tên đăng nhập và mật khẩu' });
+    }
+
+    const query = `SELECT * FROM account WHERE username = ?`;
+    database.query(query, [username], function(error, data) {
+        if (error) {
+            return response.status(500).json({ error: 'Lỗi máy chủ nội bộ' });
+        }
+
+        if (data.length > 0) {
+            return response.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
+        }
+
+        const insertQuery = `INSERT INTO account (username, password) VALUES (?, ?)`;
+        database.query(insertQuery, [username, password], function(error, result) {
+            if (error) {
+                return response.status(500).json({ error: 'Lỗi máy chủ nội bộ' });
+            }
+            response.status(200).json({ message: 'Tạo tài khoản thành công' });
+        });
+    });
+};
 
 const getUserHomepage = (request, response)=>{
     response.render('Userpage.ejs');
 }
 module.exports = {
     getHomepage,
-    getKhoi,
     postLogin,
-    postResigter,
+    postRegister,
     getUserHomepage
 }

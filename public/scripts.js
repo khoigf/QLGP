@@ -47,7 +47,9 @@ document.getElementById('registerForm').addEventListener('submit', function(even
     xhr.onload = function() {
         var response = JSON.parse(xhr.responseText);
         if (xhr.status === 200) {
-            document.getElementById('registerMessage').textContent = response.message;
+            closeModal();
+            showLoginModal();
+            document.getElementById('successMessage').textContent = response.message;
         } else {
             document.getElementById('registerMessage').textContent = response.error;
         }
