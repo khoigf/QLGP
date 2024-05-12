@@ -1,9 +1,4 @@
 var database=require('../config/database')
-const getHomepage = (req,res)=>{
-    //process data 
-    //get model
-    res.render('homepage.ejs')
-}
 
 const postLogin = (request, response, next)=>{
 
@@ -68,12 +63,7 @@ const postRegister = (request, response, next) => {
     });
 }
 
-const getUserHomepage = (request, response)=>{
-    response.render('Userpage.ejs');
-}
 module.exports = {
-    getHomepage,
     postLogin,
     postRegister,
-    getUserHomepage
 }
