@@ -1,6 +1,6 @@
 const database = require('../config/database');
 
-var user;
+const sessions={}
 const postLogin = (request, response, next) => {
     const user_name = request.body.username;
     const user_password = request.body.password;
@@ -15,8 +15,12 @@ const postLogin = (request, response, next) => {
                 response.status(500).json({ message: error.message });
             } else {
                 if (data.length > 0 && data[0].password === user_password) {
-                    response.status(200).json({ message: 'OK' , id : data[0].userId});
-                    user = data[0];
+                    const sessionId = Date.now().toString();
+                    sessions[sessionId] = {
+                        userId: data[0].userId,
+                    }
+                    response.cookie('sessionId', sessionId, { maxAge: 3600000, httpOnly: true });
+                    response.status(200).json({ message: 'OK' });
                 } else {
                     response.status(400).json({ message: 'WRONG_USERNAME_OR_PASSWORD' });
                 }
@@ -63,31 +67,38 @@ const postRegister = (request, response, next) => {
 
 
 const getUser = (request, response, next) => {
-    if (!user) {
-        return response.status(401).json({ message: 'UNAUTHORIZED' });
-    }
-
-    const user_id = user.userId;
-    const query = `
-        SELECT userId, username FROM account
-        WHERE userId = "${user_id}"
-    `;
-    database.query(query, function(error, data) {
-        if (error) {
-            response.status(500).json({ message: error.message });
-        } else {
-            if (data.length > 0) {
-                const { userId, username } = data[0];
-                response.status(200).json({ userId: userId, username });
+    const sessionId = request.cookies.sessionId;
+    if (sessionId && sessions[sessionId]) {
+        const userId = sessions[sessionId].userId;
+        const query = `
+            SELECT userId, username FROM account
+            WHERE userId = "${userId}"
+        `;
+        database.query(query, function(error, data) {
+            if (error) {
+                response.status(500).json({ message: error.message });
             } else {
-                response.status(401).json({ message: 'UNAUTHORIZED' });
+                if (data.length > 0) {
+                    const { userId, username } = data[0];
+                    response.status(200).json({ userId: userId, username });
+                } else {
+                    response.status(401).json({ message: 'UNAUTHORIZED' });
+                }
             }
-        }
-    });
+        });
+    } else {
+        response.status(401).json({ message: 'UNAUTHORIZED' });
+    }
+};
+
+const getLogout = (request, response, next) => {
+    delete sessions[request.cookies.sessionId];
+    response.cookie('sessionId', '', { maxAge: 0, httpOnly: true });
 };
 
 module.exports = {
     postLogin,
     postRegister,
-    getUser
+    getUser,
+    getLogout,
 };

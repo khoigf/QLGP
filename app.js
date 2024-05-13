@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express')
 const path = require('path');
+const cookieParser = require("cookie-parser")
 const createError = require('http-errors');
 const configViewEngine = require('./config/viewEngine');
 const webRoutes = require('./routes/web')
@@ -15,7 +16,7 @@ configViewEngine(app)
 middleware(app);
 //khai bao route
 app.use('/',webRoutes)
-
+app.use(cookieParser());
 app.use(function(req, res, next) {
   next(createError(404));
 });
