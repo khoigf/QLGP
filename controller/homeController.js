@@ -94,6 +94,7 @@ const getUser = (request, response, next) => {
 const getLogout = (request, response, next) => {
     delete sessions[request.cookies.sessionId];
     response.cookie('sessionId', '', { maxAge: 0, httpOnly: true });
+    response.status(200).json({ message: 'OK' });
 };
 
 module.exports = {
