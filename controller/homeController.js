@@ -57,7 +57,45 @@ const postRegister = (request, response, next) => {
                     if (error) {
                         response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                     } else {
-                        response.status(200).json({ message: 'OK' });
+                        // response.status(200).json({ message: 'OK' });
+                        const query3 = `INSERT INTO person (ownerUserId) VALUES (?)`;
+                        database.query(query3, [id], function(error, data) {
+                            if (error) {
+                                response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
+                            } else {
+                                const query4 = `
+                                    SELECT id FROM person
+                                    WHERE ownerUserId = "${id}"
+                                `;
+                                database.query(query4, function(error, data) {
+                                    if (error) {
+                                        response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
+                                    } else{
+                                        const pId=data[0].id;
+                                        console.log(pId);
+                                        const query5 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
+                                                        VALUES ?`;
+                                        const Data=[
+                                            [pId,1, 'callname', 'toi'],
+                                            [pId,2, 'gender', 'nam'],
+                                            [pId,3, 'spouse', ''],
+                                            [pId,4, 'father', ''],
+                                            [pId,5, 'mother', ''],
+                                            [pId,6, 'birthday', ''],
+                                            [pId,7, 'deathday', ''],
+                                            [pId,8, 'avatar', '']
+                                        ];
+                                        database.query(query5,[Data], function(error, data) {
+                                            if (error) {
+                                                response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
+                                            } else{
+                                                response.status(200).json({ message: 'OK' });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
                 });
             }

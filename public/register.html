@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Đăng ký</title>
+
+    <script src="./api.js"></script>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/coreui-style.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-md-6">
+            <div class="card mb-4 mx-4">
+              <div class="card-body p-4">
+                <h1>Đăng ký</h1>
+                <p class="text-medium-emphasis">Tạo tài khoản của bạn</p>
+                <div class="input-group mb-3"><span class="input-group-text">
+                    <svg class="icon">
+                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+
+                    </svg></span>
+                  <input class="form-control" type="text" placeholder="Username" id="username">
+                </div>
+                <div class="input-group mb-3"><span class="input-group-text">
+                    <svg class="icon">
+                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                    </svg></span>
+                  <input class="form-control" type="password" placeholder="Password" id="password">
+                </div>
+                <div class="input-group mb-4"><span class="input-group-text">
+                    <svg class="icon">
+                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                    </svg></span>
+                  <input class="form-control" type="password" placeholder="Nhập lại Password" id="repeatPassword">
+                </div>
+                <div class="alert alert-danger" id="alert" style="display: none;"></div>
+                <button class="btn btn-block btn-success" type="button" id="signUp">Tạo tài khoản</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      $(() => {
+        $("#signUp").click(() => {
+          let $alert = $("#alert").hide()
+
+          let un = $("#username").val()
+          let pw = $("#password").val()
+          let rpw = $("#repeatPassword").val()
+
+          if (un == '' && pw == '' && rpw == '') return
+
+          let lengthRange = [6, 12]
+          
+          if (un.length < lengthRange[0] || un.length > lengthRange[1]) {
+            $alert.show().html(`Username phải có độ dài lớn hơn ${lengthRange[0]} và không vượt quá ${lengthRange[1]}!`)
+            return
+          }
+          if (pw.length < lengthRange[0] || pw.length > lengthRange[1]) {
+            $alert.show().html(`Password phải có độ dài lớn hơn ${lengthRange[0]} và không vượt quá ${lengthRange[1]}!`)
+            return
+          }
+
+          let re = /^[a-zA-Z0-9]+$/
+          if (!re.test(un)) {
+            $alert.show().html(`Username chỉ được phép chứa các chữ cái a-z, A-Z và 0-9!`)
+            return
+          }
+          if (!re.test(pw)) {
+            $alert.show().html(`Password chỉ được phép chứa các chữ cái a-z, A-Z và 0-9!`)
+            return
+          }
+
+          if (pw != rpw) {
+            $alert.show().html(`Mật khẩu được nhập chưa trùng nhau!`)
+            return
+          }
+
+          api.signUp({username: un, password: pw}).then(({message}) => {
+            if (message == 'OK') {
+              window.location.href = '.'
+            } else {
+              $alert.show().html(`Username đã tồn tài, vui lòng nhập lại Username!`)
+            }
+          }).catch(() => {
+            if (err.response?.data?.message == 'USERNAME_EXISTED') {
+              $alert.show().html(`Username đã tồn tài, vui lòng nhập lại Username!`)
+              return
+            }
+            $alert.show().html(`Có lỗi không xác định!`)
+          })
+        })
+      })
+    </script>
+  </body>
+</html>

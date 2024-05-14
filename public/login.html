@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Đăng nhập</title>
+
+    <script src="./api.js"></script>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/coreui-style.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="card-group d-block d-md-flex row">
+              <div class="card col-md-7 p-4 mb-0">
+                <div class="card-body">
+                  <h1>Đăng nhập</h1>
+                  <p class="text-medium-emphasis">Đăng nhập vào tài khoản của bạn</p>
+                  <div class="input-group mb-3"><span class="input-group-text">
+                      <svg class="icon">
+                        <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                      </svg></span>
+                    <input class="form-control" type="text" placeholder="Username" id="username">
+                  </div>
+                  <div class="input-group mb-4"><span class="input-group-text">
+                      <svg class="icon">
+                        <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                      </svg></span>
+                    <input class="form-control" type="password" placeholder="Password" id="password">
+                  </div>
+                  <div class="alert alert-danger" id="alert" style="display: none;"></div>
+                  <div class="row">
+                    <div class="col-6">
+                      <button class="btn btn-primary px-4" type="button" id="login">Đăng nhập</button>
+                    </div>
+                    <div class="col-6 text-end">
+                      <button class="btn btn-link px-0" type="button"></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card col-md-5 text-white bg-primary py-5">
+                <div class="card-body text-center">
+                  <div>
+                    <h2>Đăng ký</h2>
+                    <p>Đăng ký ngay để có thể sử dụng trang web quản lý gia phả và vẽ biểu đồ gia phả mạnh mẽ và linh hoạt nhất hiện nay</p>
+                    <button class="btn btn-lg btn-outline-light mt-3" type="button" id="signUp">Đăng ký ngay!</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      $(() => {
+        $("#login").click(() => {
+          let $alert = $("#alert").hide()
+
+          let un = $("#username").val()
+          let pw = $("#password").val()
+
+          if (un == '' && pw == '') return
+
+          let lengthRange = [6, 12]
+          
+          if (un.length < lengthRange[0] || un.length > lengthRange[1]) {
+            $alert.show().html(`Username phải có độ dài lớn hơn ${lengthRange[0]} và không vượt quá ${lengthRange[1]}!`)
+            return
+          }
+          if (pw.length < lengthRange[0] || pw.length > lengthRange[1]) {
+            $alert.show().html(`Password phải có độ dài lớn hơn ${lengthRange[0]} và không vượt quá ${lengthRange[1]}!`)
+            return
+          }
+
+          let re = /^[a-zA-Z0-9]+$/
+          if (!re.test(un)) {
+            $alert.show().html(`Username chỉ được phép chứa các chữ cái a-z, A-Z và 0-9!`)
+            return
+          }
+          if (!re.test(pw)) {
+            $alert.show().html(`Password chỉ được phép chứa các chữ cái a-z, A-Z và 0-9!`)
+            return
+          }
+
+          api.login({username: un, password: pw}).then(({message}) => {
+            if (message == 'OK') {
+              window.location.href = '.'
+            } else {
+              $alert.show().html(`Username hoặc Password không chính xác!`)
+            }
+          }).catch((err) => {
+            if (err.response?.data?.message == 'WRONG_USERNAME_OR_PASSWORD') {
+              $alert.show().html(`Username hoặc Password không chính xác!`)
+              return
+            }
+            $alert.show().html(`Có lỗi không xác định!`)
+          })
+        })
+
+        $("#signUp").click(() => window.location.href = './register.html')
+      })
+    </script>
+
+  </body>
+</html>
