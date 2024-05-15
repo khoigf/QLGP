@@ -137,6 +137,9 @@ const getLogout = (request, response, next) => {
 
 const addRelative = (request, response, next) => {
     const { data, target, asRole } = request.body;
+    if(!data){
+        response.status(400).json({ message: 'No data' });
+    }
     const sessionId = request.cookies.sessionId;
     const query1 = `INSERT INTO person (ownerUserId) VALUES (?)`;
     database.query(query1,[sessions[sessionId].userId],function(error,result){
