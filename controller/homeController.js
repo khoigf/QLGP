@@ -252,10 +252,13 @@ const getInfo = (request, response, next) => {
 }
 
 const getAllInfo = (request, response, next) => {
-    //const uId = sessions[request.cookies.sessionId].userId;
+    const uId = sessions[request.cookies.sessionId].userId;
+    if (!uId) {
+        response.status(400).json({ message: 'UNAUTHORIZED' });
+    }
     const query = `
         SELECT id FROM person
-        WHERE ownerUserId = "${1}"
+        WHERE ownerUserId = "${uId}"
     `;
     database.query(query, function (error, result) {
         if (error) {
