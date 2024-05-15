@@ -142,7 +142,7 @@ const addRelative = (request, response, next) => {
     }
     const sessionId = request.cookies.sessionId;
     const query1 = `INSERT INTO person (ownerUserId) VALUES (?)`;
-    database.query(query1,[sessions[sessionId].userId],function(error,result){
+    database.query(query1,[sessions[sessionId].id],function(error,result){
         if(error){
             response.status(500).json({message:error.message});
         }else{
@@ -151,18 +151,21 @@ const addRelative = (request, response, next) => {
                 const query2 = `
                             SELECT id FROM fielddefinition 
                             WHERE code = "${data[i].code}"`;
+                const codei=data[i].code;
+                const valuei=data[i].value;
                 database.query(query2,function(error,result){
                     if(error){
                         response.status(500).json({message:error.message});
                     }else{
                         const id = result[0].id;
+                        console.log(codei);
                         const query3 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
                         VALUES (?,?,?,?)`;
-                        database.query(query3,[pId,id,data[i].code,data[i].value],function(error,result){
+                        database.query(query3,[pId,id,codei,valuei],function(error,result){
                             if(error){
                                 response.status(500).json({message:error.message});
                             }else{
-                                console.log("OK");
+                                response.status(200).json({message:'OK'});
                             }
                         });
                     }
@@ -175,7 +178,7 @@ const addRelative = (request, response, next) => {
                     if(error){
                         response.status(500).json({message:error.message});
                     }else{
-                        response.status(200).json({message:'OK'});
+                        console.log("OK");
                     }
                 });
             }
