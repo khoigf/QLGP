@@ -8,19 +8,23 @@ function API() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: method != 'GET' ? JSON.stringify(data || {}) : undefined
+            body: method != 'GET' ? JSON.stringify(data || {}) : undefined,
+            redirect: 'manual'
         })
-        .then(res => res.json())
+        .then(res => res.json()).then(r => {
+            console.log(r);
+            return r
+        })
     }
 
     return {
         getLoginedUser: data => myFetch('/user', data),
         login: data => myFetch('/login', data, 'POST'),
         signUp: data => myFetch('/register', data, 'POST'),
-        getPeopleOfUserBaseInfo: data => myFetch('', data),
-        getPersonBaseInfo: data => myFetch('', data),
+        getPeopleOfUserBaseInfo: data => myFetch('/allInfo', data),
+        getPersonBaseInfo: data => myFetch('/info', data),
         getPersonDetailInfo: data => myFetch('', data),
-        addPerson: data => myFetch('', data),
+        addPerson: data => myFetch('/addRelative', data,'POST'),
         updateFieldValues: data => myFetch('', data),
         addField: data => myFetch('', data),
         updateField: data => myFetch('', data),

@@ -58,8 +58,8 @@ const postRegister = (request, response, next) => {
                         response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                     } else {
                         // response.status(200).json({ message: 'OK' });
-                        const query3 = `INSERT INTO person (ownerUserId) VALUES (?)`;
-                        database.query(query3, [id], function(error, data) {
+                        const query3 = `INSERT INTO person (ownerUserId,isStandForUser) VALUES (?,?)`;
+                        database.query(query3, [id,1], function(error, data) {
                             if (error) {
                                 response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                             } else {
@@ -76,8 +76,8 @@ const postRegister = (request, response, next) => {
                                         const query5 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
                                                         VALUES ?`;
                                         const Data=[
-                                            [pId,1, 'callname', 'toi'],
-                                            [pId,2, 'gender', 'nam'],
+                                            [pId,1, 'callname', 'Tôi'],
+                                            [pId,2, 'gender', 'Nam'],
                                             [pId,3, 'spouse', ''],
                                             [pId,4, 'father', ''],
                                             [pId,5, 'mother', ''],
@@ -142,11 +142,13 @@ const addRelative = (request, response, next) => {
     }
     const sessionId = request.cookies.sessionId;
     const query1 = `INSERT INTO person (ownerUserId) VALUES (?)`;
-    database.query(query1,[sessions[sessionId].id],function(error,result){
+    database.query(query1,[sessions[sessionId].userId],function(error,result){
         if(error){
             response.status(500).json({message:error.message});
         }else{
             const pId = result.insertId;
+            const kq=data.length;
+            var check=0;
             for(var i=0;i<data.length;i++){
                 const query2 = `
                             SELECT id FROM fielddefinition 
@@ -158,14 +160,16 @@ const addRelative = (request, response, next) => {
                         response.status(500).json({message:error.message});
                     }else{
                         const id = result[0].id;
-                        console.log(codei);
                         const query3 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
                         VALUES (?,?,?,?)`;
                         database.query(query3,[pId,id,codei,valuei],function(error,result){
                             if(error){
                                 response.status(500).json({message:error.message});
                             }else{
-                                response.status(200).json({message:'OK'});
+                                check++;
+                                if(check==kq){
+                                    response.status(200).json({message:'OK'});
+                                }
                             }
                         });
                     }
@@ -270,7 +274,7 @@ const getAllInfo = (request, response, next) => {
         if (error) {
             response.status(500).json({ message: error.message });
         }else{
-            const info = {}
+            const info = []
             const len=result.length;
             console.log(len);
             var i=0;
@@ -327,7 +331,7 @@ const getAllInfo = (request, response, next) => {
                                                         father: relatedPersons.father,
                                                         mother: relatedPersons.mother
                                                     };
-                                                    info[id] = ans;
+                                                    info.push(ans);
                                                     i++;
                                                     if(i==len){
                                                         response.status(200).json(info);
