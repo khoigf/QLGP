@@ -22,13 +22,13 @@
                   <p class="text-medium-emphasis">Đăng nhập vào tài khoản của bạn</p>
                   <div class="input-group mb-3"><span class="input-group-text">
                       <svg class="icon">
-                        <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                        <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-user"></use>
                       </svg></span>
                     <input class="form-control" type="text" placeholder="Username" id="username">
                   </div>
                   <div class="input-group mb-4"><span class="input-group-text">
                       <svg class="icon">
-                        <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                        <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
                       </svg></span>
                     <input class="form-control" type="password" placeholder="Password" id="password">
                   </div>
@@ -91,15 +91,13 @@
           api.login({username: un, password: pw}).then(({message}) => {
             if (message == 'OK') {
               window.location.href = '.'
-            } else {
+            } else if (message == 'WRONG_USERNAME_OR_PASSWORD') {
               $alert.show().html(`Username hoặc Password không chính xác!`)
+            } else {
+              $alert.show().html(`Có lỗi không xác định!`)
             }
           }).catch((err) => {
-            if (err.response?.data?.message == 'WRONG_USERNAME_OR_PASSWORD') {
-              $alert.show().html(`Username hoặc Password không chính xác!`)
-              return
-            }
-            $alert.show().html(`Có lỗi không xác định!`)
+            $alert.show().html(`Không thể kết nối tới server!`)
           })
         })
 

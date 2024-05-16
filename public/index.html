@@ -1,189 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Quản lý gia phả</title>
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-  <title>Quản lý gia phả</title>
-
-  <script src="./api.js"></script>
-  <link href="./css/bootstrap.min.css" rel="stylesheet">
-  <link href="./css/coreui-style.css" rel="stylesheet">
-  <link href="./css/common.css" rel="stylesheet">
-  <link href="./css/style.css" rel="stylesheet">
-  <script src="./js/jquery.min.js"></script>
-  <script src="./js/amlich-hnd.js"></script>
-  <script src="./js/lib.js"></script>
-</head>
-
-<body>
-  <div style="position: fixed; top: 0; left: 0; bottom: 0; right: 0; background-color: white; z-index: 100000;"
-    id="coating"></div>
-  <div class="sidebar sidebar-dark sidebar-fixed" id="sidebar">
-    <div class="sidebar-brand d-md-flex">
-      <h3>Quản lý gia phả</h3>
+    <script src="./api.js"></script>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/coreui-style.css" rel="stylesheet">
+    <link href="./css/common.css" rel="stylesheet">
+    <link href="./css/style.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/amlich-hnd.js"></script>
+    <script src="./js/lib.js"></script>
+  </head>
+  <body>
+    <div style="position: fixed; top: 0; left: 0; bottom: 0; right: 0; background-color: white; z-index: 100000;" id="coating"></div>
+    <div class="sidebar sidebar-dark sidebar-fixed" id="sidebar">
+      <div class="sidebar-brand d-md-flex">
+        <h3>Quản lý gia phả</h3>
+      </div>
+      <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="" id="tabs">
+        <li class="nav-item">
+          <div class="nav-link active" tab="tab-people-manager">
+            <svg class="nav-icon">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
+            </svg>
+            Quản lý người thân
+          </div>
+        </li>
+        <li class="nav-group">
+          <div class="nav-link" tab="tab-family-tree">
+            <svg class="nav-icon">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-sitemap"></use>
+            </svg>
+             Cây gia phả
+          </div>
+        </li>
+        <li class="nav-item">
+          <div class="nav-link" tab="tab-statistic">
+            <svg class="nav-icon">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-chart-pie"></use>
+            </svg>
+            Thống kê
+          </div>
+        </li>
+        <li class="nav-group">
+          <div class="nav-link" tab="tab-upcoming-events">
+            <svg class="nav-icon">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-notes"></use>
+            </svg>
+            Sự kiện sắp tới
+          </div>
+        </li>
+      </ul>
     </div>
-    <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="" id="tabs">
-      <li class="nav-item">
-        <div class="nav-link active" tab="tab-people-manager">
-          <svg class="nav-icon">
-            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
-          </svg>
-          Quản lý người thân
-        </div>
-      </li>
-      <li class="nav-group">
-        <div class="nav-link" tab="tab-family-tree">
-          <svg class="nav-icon">
-            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-sitemap"></use>
-          </svg>
-          Cây gia phả
-        </div>
-      </li>
-      <li class="nav-item">
-        <div class="nav-link" tab="tab-statistic">
-          <svg class="nav-icon">
-            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-chart-pie"></use>
-          </svg>
-          Thống kê
-        </div>
-      </li>
-      <li class="nav-group">
-        <div class="nav-link" tab="tab-events">
-          <svg class="nav-icon">
-            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-notes"></use>
-          </svg>
-          Sự kiện sắp tới
-        </div>
-      </li>
-    </ul>
-  </div>
+    
+    <div class="wrapper d-flex flex-column min-vh-100 bg-light" id="main" style="position: relative;">
+      <header class="header header-sticky mb-4" id="header">
+        <div class="container-fluid">
+          <button class="header-toggler px-md-0 me-md-3" type="button" id="open-and-close-sidebar"">
+            <svg class="icon icon-lg">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-menu"></use>
+            </svg>
+          </button>
+          <script>
+            $(() => {
+              let $sidebar = $('#sidebar')
+              $sidebar[0].isOpenning = true
+              let $shadow = $('<div></div>').css({
+                position: 'fixed',
+                top: 0,
+                bottom: 0,
+                right: 0,
+                left: 0,
+                'background-color': 'black',
+                opacity: 0.5,
+                'z-index': 99998,
+                display: 'none'
+              }).click(() => {
+                $("#open-and-close-sidebar").click()
+              })
+              $(document.body).append($shadow)
 
-  <div class="wrapper d-flex flex-column min-vh-100 bg-light" id="main" style="position: relative;">
-    <header class="header header-sticky mb-4" id="header">
-      <div class="container-fluid">
-        <button class="header-toggler px-md-0 me-md-3" type="button" id="open-and-close-sidebar"">
-            <svg class=" icon icon-lg">
-          <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-menu"></use>
-          </svg>
-        </button>
-        <script>
-          $(() => {
-            let $sidebar = $('#sidebar')
-            $sidebar[0].isOpenning = true
-            let $shadow = $('<div></div>').css({
-              position: 'fixed',
-              top: 0,
-              bottom: 0,
-              right: 0,
-              left: 0,
-              'background-color': 'black',
-              opacity: 0.5,
-              'z-index': 99998,
-              display: 'none'
-            }).click(() => {
-              $("#open-and-close-sidebar").click()
-            })
-            $(document.body).append($shadow)
+              $("#open-and-close-sidebar").click(() => {
+                let isSidebarOpenning = $sidebar[0].isOpenning
+                isSidebarOpenning = !isSidebarOpenning
+                
+                $sidebar[0].isOpenning = isSidebarOpenning
+                $sidebar.toggle()
+                $("#main").css('padding-left', isSidebarOpenning ? 'var(--cui-sidebar-occupy-start, 0)' : 0)
 
-            $("#open-and-close-sidebar").click(() => {
-              let isSidebarOpenning = $sidebar[0].isOpenning
-              isSidebarOpenning = !isSidebarOpenning
-
-              $sidebar[0].isOpenning = isSidebarOpenning
-              $sidebar.toggle()
-              $("#main").css('padding-left', isSidebarOpenning ? 'var(--cui-sidebar-occupy-start, 0)' : 0)
-
-              if (window.isSmallScreen) {
-                $shadow.toggle($sidebar[0].isOpenning)
-              } else {
-                $shadow.hide()
-              }
-            })
-
-            let prevStateSmallScreen = false
-            function onWindowResize() {
-              let width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
-              window.isSmallScreen = (width < 768)
-
-              if (window.isSmallScreen) {
-                $shadow.toggle($sidebar[0].isOpenning)
-                $sidebar.css({
-                  position: 'fixed',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  'z-index': 99999,
-                  'margin-left': 0
-                })
-              } else {
-                $shadow.hide()
-              }
-
-              if (!prevStateSmallScreen && window.isSmallScreen) {
-                if ($sidebar[0].isOpenning) {
-                  $("#open-and-close-sidebar").click()
+                if (window.isSmallScreen) {
+                  $shadow.toggle($sidebar[0].isOpenning)
+                } else {
+                  $shadow.hide()
                 }
+              })
+
+              let prevStateSmallScreen = false
+              function onWindowResize() {
+                let width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+                window.isSmallScreen = (width < 768)
+                
+                if (window.isSmallScreen) {
+                  $shadow.toggle($sidebar[0].isOpenning)
+                  $sidebar.css({
+                    position: 'fixed',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    'z-index': 99999,
+                    'margin-left': 0
+                  })
+                } else {
+                  $shadow.hide()
+                }
+
+                if (!prevStateSmallScreen && window.isSmallScreen) {
+                  if ($sidebar[0].isOpenning) {
+                    $("#open-and-close-sidebar").click()
+                  }
+                }
+                prevStateSmallScreen = window.isSmallScreen
+                return onWindowResize
               }
-              prevStateSmallScreen = window.isSmallScreen
-              return onWindowResize
-            }
-            $(window).resize(onWindowResize())
-          })
-        </script>
+              $(window).resize(onWindowResize())
+            })
+          </script>
+          
+          <ul class="header-nav ms-3">
+            <li class="nav-item dropdown">
+              <a class="nav-link py-0" data-coreui-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                <div class="avatar avatar-md"><img class="avatar-img" src="./resources/default-avatar.jpg" alt="user@email.com"></div>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </header>
 
-        <ul class="header-nav ms-3">
-          <li class="nav-item dropdown">
-            <a class="nav-link py-0" data-coreui-toggle="dropdown" href="#" role="button" aria-haspopup="true"
-              aria-expanded="false">
-              <div class="avatar avatar-md"><img class="avatar-img" src="./resources/default-avatar.jpg"
-                  alt="user@email.com"></div>
-            </a>
-          </li>
-        </ul>
+      <div class="body flex-grow-1 px-3">
+        <div class="container-lg">
+          <div class="tab-content table-responsive" id="tab-people-manager"></div>
+          <div class="tab-content table-responsive" id="tab-statistic"></div>
+          <div class="tab-content table-responsive" id="tab-upcoming-events"></div>
+        </div>
       </div>
-    </header>
 
-    <div class="body flex-grow-1 px-3">
-      <div class="container-lg">
-        <div class="tab-content table-responsive" id="tab-people-manager"></div>
-      </div>
+      <!-- Special tab content here to zoomable -->
+      <div class="tab-content" id="tab-family-tree" style="position: absolute; top: 0; right: 0; left: 0; bottom: 0; display: none;"></div>
     </div>
 
-    <!-- Special tab content here to zoomable -->
-    <div class="tab-content" id="tab-family-tree"
-      style="position: absolute; top: 0; right: 0; left: 0; bottom: 0; display: none;"></div>
-  </div>
-
-  <script>
-    $(() => {
-      api.getLoginedUser().then(res => {
-        let user = { userId: res.userId, username: res.username }
-        if (!user.userId) {
-          window.location.href = './login.html'
-          return
-        }
-        $("#coating").html('Hello, ' + user.username + '!')
-        return
-        $("#coating").remove()
-        load(user)
-        $('#tabs .nav-link').click(function () {
-          if ($(this).hasClass('active')) return
-          let tabName = $(this).attr('tab')
-          $('#tabs .nav-link').removeClass('active')
-          $(this).addClass('active')
-          $('#main .tab-content').html('').hide()
-          $(`#${tabName}`).show()[0]?.load?.()
-          if (window.isSmallScreen) {
-            $("#open-and-close-sidebar").click()
+    <script src="./main.js"></script>
+    <script>
+      $(() => {
+        api.getLoginedUser().then(res => {
+          let message = res.message
+          if (message == 'UNAUTHORIZED') {
+            window.location.href = './login.html'
+            return
           }
+          let user = { userId: res.userId, username: res.username}
+          $("#coating").remove()
+          load(user)
+          $('#tabs .nav-link').click(function () {
+            if ($(this).hasClass('active')) return
+            let tabName = $(this).attr('tab')
+            $('#tabs .nav-link').removeClass('active')
+            $(this).addClass('active')
+            $('#main .tab-content').html('').hide()
+            $(`#${tabName}`).show()[0]?.load?.()
+            if (window.isSmallScreen) {
+              $("#open-and-close-sidebar").click()
+            }
+          })
         })
+        .catch(() => window.location.href = './login.html')
       })
-        .catch(() => {
-          window.location.href = './login.html'
-        })
-    })
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>

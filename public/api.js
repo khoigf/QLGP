@@ -3,20 +3,12 @@ function API() {
     const BASE_API_URL = '.'
 
     function myFetch(path, data = {}, method = 'GET') {
-        if(method == 'GET'){
-            return fetch(BASE_API_URL + path + (Object.keys(data).length == 0 ?'': '?' + Object.keys(data).map(k => k+'='+data[k]).join('&')), {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).then(res => res.json())
-        }
-        return fetch(BASE_API_URL + path, {
+        return fetch(BASE_API_URL + path + ((method == 'GET' && Object.keys(data) != 0) ? '?' + Object.keys(data).map(k => `${k}=${data[k]}`).join('&') : ''), {
             method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data || {})
+            body: method != 'GET' ? JSON.stringify(data || {}) : undefined
         })
         .then(res => res.json())
     }

@@ -21,20 +21,20 @@
                 <p class="text-medium-emphasis">Tạo tài khoản của bạn</p>
                 <div class="input-group mb-3"><span class="input-group-text">
                     <svg class="icon">
-                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                      <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-user"></use>
 
                     </svg></span>
                   <input class="form-control" type="text" placeholder="Username" id="username">
                 </div>
                 <div class="input-group mb-3"><span class="input-group-text">
                     <svg class="icon">
-                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                      <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
                     </svg></span>
                   <input class="form-control" type="password" placeholder="Password" id="password">
                 </div>
                 <div class="input-group mb-4"><span class="input-group-text">
                     <svg class="icon">
-                      <use xlink:href="vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                      <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
                     </svg></span>
                   <input class="form-control" type="password" placeholder="Nhập lại Password" id="repeatPassword">
                 </div>
@@ -85,16 +85,22 @@
 
           api.signUp({username: un, password: pw}).then(({message}) => {
             if (message == 'OK') {
-              window.location.href = '.'
-            } else {
+              api.login({username: un, password: pw}).then(({message}) => {
+                if (message == 'OK') {
+                  window.location.href = '.'
+                } else {
+                  $alert.show().html(`Có lỗi không xác định!`)
+                }
+              }).catch((err) => {
+                $alert.show().html(`Không thể kết nối tới server!`)
+              })
+            } else if (message == 'USERNAME_EXISTED') {
               $alert.show().html(`Username đã tồn tài, vui lòng nhập lại Username!`)
+            } else {
+              $alert.show().html(`Có lỗi không xác định!`)
             }
           }).catch(() => {
-            if (err.response?.data?.message == 'USERNAME_EXISTED') {
-              $alert.show().html(`Username đã tồn tài, vui lòng nhập lại Username!`)
-              return
-            }
-            $alert.show().html(`Có lỗi không xác định!`)
+            $alert.show().html(`Không thể kết nối tới server!`)
           })
         })
       })
