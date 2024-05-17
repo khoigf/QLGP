@@ -23,10 +23,10 @@ function API() {
         signUp: data => myFetch('/register', data, 'POST'),
         getPeopleOfUserBaseInfo: data => myFetch('/allInfo', data),
         getPersonBaseInfo: data => myFetch('/info', data),
-        getPersonDetailInfo: data => myFetch('', data),
+        getPersonDetailInfo: data => myFetch('/detailInfo', data),
         addPerson: data => myFetch('/addRelative', data,'POST'),
-        updateFieldValues: data => myFetch('', data),
-        addField: data => myFetch('', data),
+        updateFieldValues: data => myFetch('/updateFValue', data,'POST'),
+        addField: data => myFetch('/addField', data,'POST'),
         updateField: data => myFetch('', data),
         deleteField: data => myFetch('', data),
         drawFamilyTree: data => myFetch('', data)
