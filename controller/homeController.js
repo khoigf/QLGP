@@ -616,7 +616,9 @@ const addField = (request, response, next)=>{
 
         if (isForAllPeople) {
             // Tạo các bản ghi FieldValue cho tất cả người thân của người dùng
-            const sqlSelectPersons = 'SELECT id FROM person';
+            const sessionId = request.cookies.sessionId;
+            const userId = sessions[sessionId].userId;
+            const sqlSelectPersons = `SELECT id FROM person WHERE ownerUserId = ${userId}`;
             database.query(sqlSelectPersons, (err, persons) => {
                 if (err) {
                     console.error(err);
