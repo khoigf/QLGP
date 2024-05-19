@@ -39,4 +39,4 @@ function API() {
     }
 }
 
-let api = FakeAPI()
+let api = API()
