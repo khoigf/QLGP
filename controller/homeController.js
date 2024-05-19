@@ -2,7 +2,8 @@ const database = require('../config/database');
 
 const sessions = {}
 const getPersonData = async (ids) => {
-    if (!Array.isArray(ids)) {
+    var isMultivalue = Array.isArray(ids);
+    if (!isMultivalue) {
         ids = [ids];
     }
     try {
@@ -65,7 +66,7 @@ const getPersonData = async (ids) => {
             results.push(result);
         }
 
-        return ids.length === 1 ? results[0] : results;
+        return isMultivalue ? results : results[0];
     } catch (error) {
         console.error("Error fetching person data:", error);
         throw error;
@@ -271,7 +272,7 @@ const addRelative = (request, response, next) => {
 }
 
 const getInfo = (request, response, next) => {
-    const id = request.body.id;
+    const id = request.query.id;
     if (!id) {
         response.status(400).json({ message: 'ID is required' });
     }
@@ -431,7 +432,7 @@ const getAllInfo = (request, response, next) => {
 }
 
 const getDetailInfo = (request, response, next) => {
-    const id = request.body.id;
+    const id = request.query.id;
     if (!id) {
         response.status(400).json({ message: 'ID not found' });
     }
@@ -443,6 +444,8 @@ const getDetailInfo = (request, response, next) => {
             const person = result[0];
             const query2 = ` SELECT 
                 fv.fieldDefinitionId,
+                fd.id,
+                fv.fieldDefinitionCode,
                 fd.code,
                 fd.name,
                 fd.description,
@@ -451,7 +454,7 @@ const getDetailInfo = (request, response, next) => {
                 fd.isForAllPeople,
                 fv.value
             FROM fieldvalue fv
-            JOIN fielddefinition fd ON fv.fieldDefinitionCode = fd.code
+            JOIN fielddefinition fd ON fv.fieldDefinitionId = fd.id
             WHERE fv.personId = ?`
             database.query(query2, [id], async function (error, result2) {
                 if (error) {
@@ -593,9 +596,10 @@ const updateFieldValues = (request, response, next) => {
 };
 
 const addField = (request, response, next)=>{
-    const { name, description, type, isMultivalue, isForAllPeople, personId } = request.body;
+    const { name, description, type, isMultiValue, isForAllPeople, personId } = request.body.data;
 
-    if (!name || !description || !type || typeof isMultivalue === 'undefined' || typeof isForAllPeople === 'undefined') {
+    if ( typeof name === 'undefined' || typeof description === 'undefined' || typeof type === 'undefined' 
+            || typeof isMultiValue === 'undefined' || typeof isForAllPeople === 'undefined') {
         return response.status(400).json({ message: 'Invalid input data' });
     }
 
@@ -605,7 +609,7 @@ const addField = (request, response, next)=>{
         VALUES (NULL, ?, ?, ?, ?, ?)
     `;
 
-    database.query(sqlInsertFieldDefinition, [name, description, type, isMultivalue, isForAllPeople], (err, results) => {
+    database.query(sqlInsertFieldDefinition, [name, description, type, isMultiValue, isForAllPeople], (err, results) => {
         if (err) {
             response.status(500).json({ message: err.message });
         }
@@ -634,8 +638,14 @@ const addField = (request, response, next)=>{
                         }
                     });
                 });
-
-                response.status(200).json({ message: 'OK' });
+                const sqlreturn = `SELECT * FROM fielddefinition WHERE id = ${fieldDefinitionId}`;
+                database.query(sqlreturn, (err, results) => {
+                    if (err) {
+                        response.status(500).json({ message: err.message });
+                    }else{
+                        response.status(200).json({newFieldDef:results[0]});
+                    }
+                });
             });
         } else {
             if (!personId) {
@@ -650,16 +660,24 @@ const addField = (request, response, next)=>{
             database.query(sqlInsertFieldValue, [personId, fieldDefinitionId], (err) => {
                 if (err) {
                     response.status(500).json({ message: err.message });
+                }else{
+                    const sqlreturn = `SELECT * FROM fielddefinition WHERE id = ${fieldDefinitionId}`;
+                    database.query(sqlreturn, (err, results) => {
+                        if (err) {
+                            response.status(500).json({ message: err.message });
+                        }else{
+                            response.status(200).json({newFieldDef:results[0]});
+                        }
+                    });
                 }
-                response.status(200).json({ message: 'OK' });
             });
         }
     });
 };
 
 const updateField = (request, response, next)=>{
-    const { id, name, description } = request.body;
-    if (!id || !name || !description) {
+    const { id, name, description } = request.body.data;
+    if (typeof id === 'undefined' || typeof name === 'undefined' || typeof description === 'undefined') {
         response.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -703,6 +721,13 @@ const deleteField = (request, response, next)=>{
         }
     });
 }
+const drawFTree = (request, response, next)=>{
+    const {targetPersonId, level} = request.body;
+    if (!targetPersonId || !level) {
+        response.status(400).json({ message: 'Missing required fields' });
+    }
+
+};
 
 module.exports = {
     postLogin,
@@ -717,4 +742,5 @@ module.exports = {
     addField,
     updateField,
     deleteField,
+    drawFTree,
 };

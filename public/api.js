@@ -1,10 +1,10 @@
 
 function API() {
     const BASE_API_URL = '.'
-    const DEBUG = true
+    const debug = true
 
     function myFetch(path, data = {}, method = 'GET') {
-        if (DEBUG) {
+        if (debug) {
             console.log('Input', path, data)
         }
         return fetch(BASE_API_URL + path + ((method == 'GET' && Object.keys(data) != 0) ? '?' + Object.keys(data).map(k => `${k}=${data[k]}`).join('&') : ''), {
@@ -16,7 +16,7 @@ function API() {
         })
         .then(res => res.json())
         .then(outData => {
-            if (DEBUG) {
+            if (debug) {
                 console.log('Output', path, outData)
             }
             return outData
@@ -35,7 +35,7 @@ function API() {
         addField: data => myFetch('/addField', data,'POST'),
         updateField: data => myFetch('/updateField', data,'POST'),
         deleteField: data => myFetch('/deleteField', data,'POST'),
-        drawFTree: data => myFetch('', data)
+        drawFTree: data => myFetch('/drawFTree', data,'POST')
     }
 }
 

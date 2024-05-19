@@ -996,6 +996,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 if (value && value != '') {
                     $element.find('input').val('Đang tải...')
                     $element.find('button').hide()
+                    console.log(value);
                     api.getPBsInf({id: value}).then(result => {
                         $element.find('input').val('Chọn...')
                         $element.find('button').show()
@@ -1137,6 +1138,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
         script: $popUp => {
             fieldValues = makeCopy(fieldValues)
             fieldValues.find(({code}) => code == 'gender').type = 'GENDER'
+            console.log(fieldValues);
             let $from = $('<form class="row g-3"></form>')
             fFacReturnVal = fieldValues.map(fV => gen$fInput(fV, udFieldDefCb))
             $from.append(fFacReturnVal.map(i => i[0]))
