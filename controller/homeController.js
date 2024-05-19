@@ -585,10 +585,9 @@ const updateFieldValues = (request, response, next) => {
     };
     updateAllFieldValues(data, (err) => {
         if (err) {
-            console.error(err);
-            return response.status(500).json({ message: 'Internal Server Error' });
+            response.status(500).json({ message: err.message });
         } else {
-            return response.json({ message: 'OK' });
+            response.status(200).json({ message: 'OK' });
         }
     });
 };
@@ -608,8 +607,7 @@ const addField = (request, response, next)=>{
 
     database.query(sqlInsertFieldDefinition, [name, description, type, isMultivalue, isForAllPeople], (err, results) => {
         if (err) {
-            console.error(err);
-            return response.status(500).json({ message: 'Internal Server Error' });
+            response.status(500).json({ message: err.message });
         }
 
         const fieldDefinitionId = results.insertId;
@@ -621,8 +619,7 @@ const addField = (request, response, next)=>{
             const sqlSelectPersons = `SELECT id FROM person WHERE ownerUserId = ${userId}`;
             database.query(sqlSelectPersons, (err, persons) => {
                 if (err) {
-                    console.error(err);
-                    return response.status(500).json({ message: 'Internal Server Error' });
+                    response.status(500).json({ message: err.message });
                 }
 
                 const sqlInsertFieldValue = `
@@ -633,16 +630,16 @@ const addField = (request, response, next)=>{
                 persons.forEach(person => {
                     database.query(sqlInsertFieldValue, [person.id, fieldDefinitionId], (err) => {
                         if (err) {
-                            console.error(err);
+                            response.status(500).json({ message: error.message });
                         }
                     });
                 });
 
-                return response.json({ message: 'OK' });
+                response.status(200).json({ message: 'OK' });
             });
         } else {
             if (!personId) {
-                return response.status(400).json({ message: 'personId is required when isForAllPeople is false' });
+                response.status(400).json({ message: 'personId is required when isForAllPeople is false' });
             }
 
             const sqlInsertFieldValue = `
@@ -652,15 +649,60 @@ const addField = (request, response, next)=>{
 
             database.query(sqlInsertFieldValue, [personId, fieldDefinitionId], (err) => {
                 if (err) {
-                    console.error(err);
-                    return response.status(500).json({ message: 'Internal Server Error' });
+                    response.status(500).json({ message: err.message });
                 }
-
-                return response.json({ message: 'OK' });
+                response.status(200).json({ message: 'OK' });
             });
         }
     });
 };
+
+const updateField = (request, response, next)=>{
+    const { id, name, description } = request.body;
+    if (!id || !name || !description) {
+        response.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const query = `
+        UPDATE fielddefinition
+        SET name = ?, description = ?
+        WHERE id = ?
+    `;
+    database.query(query, [name, description, id], (error, results) => {
+        if (error) {
+            response.status(500).json({ message: error.message })
+        }
+
+        if (results.affectedRows === 0) {
+            response.status(404).json({ message: 'Field definition not found' });
+        }
+
+        response.status(200).json({ message: 'OK' });
+    });
+}
+
+const deleteField = (request, response, next)=>{
+    const id = request.body.id;
+    if (!id ) {
+        response.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const query1 = `DELETE FROM fieldvalue WHERE fieldDefinitionId = ?`;
+    database.query(query1, [id], (error, results) => {
+        if (error) {
+            response.status(500).json({ message: error.message })
+        }else{
+            const query2 = `DELETE FROM fielddefinition WHERE id = ?`;
+            database.query(query2, [id], (error, results) => {
+                if (error) {
+                    response.status(500).json({ message: error.message })
+                }else{
+                    response.status(200).json({ message: 'OK' });
+                }
+            });
+        }
+    });
+}
 
 module.exports = {
     postLogin,
@@ -673,4 +715,6 @@ module.exports = {
     getDetailInfo,
     updateFieldValues,
     addField,
+    updateField,
+    deleteField,
 };

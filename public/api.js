@@ -27,8 +27,8 @@ function API() {
         addPerson: data => myFetch('/addRelative', data,'POST'),
         updateFieldValues: data => myFetch('/updateFValue', data,'POST'),
         addField: data => myFetch('/addField', data,'POST'),
-        updateField: data => myFetch('', data),
-        deleteField: data => myFetch('', data),
+        updateField: data => myFetch('/updateField', data,'POST'),
+        deleteField: data => myFetch('/deleteField', data,'POST'),
         drawFamilyTree: data => myFetch('', data)
     }
 }

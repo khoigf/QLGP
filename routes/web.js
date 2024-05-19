@@ -1,7 +1,7 @@
 const express = require('express');
 const {postLogin,postRegister,getUser,getLogout,addRelative,
     getInfo,getAllInfo,getDetailInfo,updateFieldValues,
-    addField} = require('../controller/homeController')
+    addField,updateField,deleteField} = require('../controller/homeController')
 var router = express.Router();
 
 router.post("/login", postLogin);
@@ -23,5 +23,9 @@ router.get("/detailInfo",getDetailInfo);
 router.post("/updateFValue", updateFieldValues);
 
 router.post("/addField", addField);
+
+router.post("/updateField", updateField);
+
+router.post("/deleteField", deleteField);
 
 module.exports = router;
