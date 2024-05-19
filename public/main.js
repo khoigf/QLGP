@@ -1334,7 +1334,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                 fVFull = [...fieldValues]
                 $editButton.show()
 
-                fieldValues = fieldValues.filter(({fieldDefinitionCode}) => !fieldDefinitionCode)
+                fieldValues = fieldValues.filter(({fieldDefinitionCode, code}) => !code && !fieldDefinitionCode)
                 $popUp.find('.rel-pp tbody .loading').remove()
                 
                 let parts = [], texts = []
