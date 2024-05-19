@@ -1,5 +1,7 @@
 const express = require('express');
-const {postLogin,postRegister,getUser,getLogout,addRelative,getInfo,getAllInfo} = require('../controller/homeController')
+const {postLogin,postRegister,getUser,getLogout,addRelative,
+    getInfo,getAllInfo,getDetailInfo,updateFieldValues,
+    addField,updateField,deleteField} = require('../controller/homeController')
 var router = express.Router();
 
 router.post("/login", postLogin);
@@ -15,5 +17,15 @@ router.post("/addRelative", addRelative);
 router.get("/info",getInfo);
 
 router.get("/allInfo",getAllInfo);
+
+router.get("/detailInfo",getDetailInfo);
+
+router.post("/updateFValue", updateFieldValues);
+
+router.post("/addField", addField);
+
+router.post("/updateField", updateField);
+
+router.post("/deleteField", deleteField);
 
 module.exports = router;
