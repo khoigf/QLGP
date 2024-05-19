@@ -34,6 +34,7 @@ function fn_reZoom() {
 
 
 function makeCopy(x, maxDepth = 5) {
+    if (!x) return x
     if (maxDepth == 0) return x
     if (Array.isArray(x)) {
         return x.map(e => makeCopy(e, maxDepth - 1))
