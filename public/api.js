@@ -1,8 +1,12 @@
 
 function API() {
     const BASE_API_URL = '.'
+    const DEBUG = true
 
     function myFetch(path, data = {}, method = 'GET') {
+        if (DEBUG) {
+            console.log('Input', path, data)
+        }
         return fetch(BASE_API_URL + path + ((method == 'GET' && Object.keys(data) != 0) ? '?' + Object.keys(data).map(k => `${k}=${data[k]}`).join('&') : ''), {
             method: method,
             headers: {
@@ -11,22 +15,28 @@ function API() {
             body: method != 'GET' ? JSON.stringify(data || {}) : undefined
         })
         .then(res => res.json())
+        .then(outData => {
+            if (DEBUG) {
+                console.log('Output', path, outData)
+            }
+            return outData
+        })
     }
 
     return {
-        getLoginedUser: data => myFetch('/user', data),
+        getLoggedU: data => myFetch('/user', data),
         login: data => myFetch('/login', data, 'POST'),
         signUp: data => myFetch('/register', data, 'POST'),
-        getPeopleOfUserBaseInfo: data => myFetch('', data),
-        getPersonBaseInfo: data => myFetch('', data),
-        getPersonDetailInfo: data => myFetch('', data),
-        addPerson: data => myFetch('', data),
-        updateFieldValues: data => myFetch('', data),
-        addField: data => myFetch('', data),
-        updateField: data => myFetch('', data),
-        deleteField: data => myFetch('', data),
-        drawFamilyTree: data => myFetch('', data)
+        getPPBsInf: data => myFetch('/allInfo', data),
+        getPBsInf: data => myFetch('/info', data),
+        getPDeatilInf: data => myFetch('/detailInfo', data),
+        addPerson: data => myFetch('/addRelative', data,'POST'),
+        udFiledVals: data => myFetch('/updateFValue', data,'POST'),
+        addField: data => myFetch('/addField', data,'POST'),
+        updateField: data => myFetch('/updateField', data,'POST'),
+        deleteField: data => myFetch('/deleteField', data,'POST'),
+        drawFTree: data => myFetch('', data)
     }
 }
 
-let api = API()
+let api = FakeAPI()

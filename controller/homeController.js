@@ -338,7 +338,7 @@ const getAllInfo = (request, response, next) => {
                                     }
                                 });
                             }
-                        }); 
+                        });
                     }
                 });
             }

@@ -13,7 +13,7 @@
   <body>
     <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
       <div class="container">
-        <div class="row justify-content-center">
+        <div class="row jf-ct-center">
           <div class="col-md-6">
             <div class="card mb-4 mx-4">
               <div class="card-body p-4">
@@ -36,7 +36,7 @@
                     <svg class="icon">
                       <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
                     </svg></span>
-                  <input class="form-control" type="password" placeholder="Nhập lại Password" id="repeatPassword">
+                  <input class="form-control" type="password" placeholder="Nhập lại Password" id="rpPass">
                 </div>
                 <div class="alert alert-danger" id="alert" style="display: none;"></div>
                 <button class="btn btn-block btn-success" type="button" id="signUp">Tạo tài khoản</button>
@@ -53,7 +53,7 @@
 
           let un = $("#username").val()
           let pw = $("#password").val()
-          let rpw = $("#repeatPassword").val()
+          let rpw = $("#rpPass").val()
 
           if (un == '' && pw == '' && rpw == '') return
 

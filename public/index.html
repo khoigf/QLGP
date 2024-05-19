@@ -22,7 +22,7 @@
       </div>
       <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="" id="tabs">
         <li class="nav-item">
-          <div class="nav-link active" tab="tab-people-manager">
+          <div class="nav-link active" tab="t-people-mng">
             <svg class="nav-icon">
               <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
             </svg>
@@ -30,7 +30,7 @@
           </div>
         </li>
         <li class="nav-group">
-          <div class="nav-link" tab="tab-family-tree">
+          <div class="nav-link" tab="t-fmTree">
             <svg class="nav-icon">
               <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-sitemap"></use>
             </svg>
@@ -38,7 +38,7 @@
           </div>
         </li>
         <li class="nav-item">
-          <div class="nav-link" tab="tab-statistic">
+          <div class="nav-link" tab="t-stas">
             <svg class="nav-icon">
               <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-chart-pie"></use>
             </svg>
@@ -46,7 +46,7 @@
           </div>
         </li>
         <li class="nav-group">
-          <div class="nav-link" tab="tab-upcoming-events">
+          <div class="nav-link" tab="t-uCm-Evts">
             <svg class="nav-icon">
               <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-notes"></use>
             </svg>
@@ -59,7 +59,7 @@
     <div class="wrapper d-flex flex-column min-vh-100 bg-light" id="main" style="position: relative;">
       <header class="header header-sticky mb-4" id="header">
         <div class="container-fluid">
-          <button class="header-toggler px-md-0 me-md-3" type="button" id="open-and-close-sidebar"">
+          <button class="header-toggler px-md-0 me-md-3" type="button" id="opAndClSidebar"">
             <svg class="icon icon-lg">
               <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-menu"></use>
             </svg>
@@ -79,31 +79,31 @@
                 'z-index': 99998,
                 display: 'none'
               }).click(() => {
-                $("#open-and-close-sidebar").click()
+                $("#opAndClSidebar").click()
               })
               $(document.body).append($shadow)
 
-              $("#open-and-close-sidebar").click(() => {
-                let isSidebarOpenning = $sidebar[0].isOpenning
-                isSidebarOpenning = !isSidebarOpenning
+              $("#opAndClSidebar").click(() => {
+                let isSBarOpen = $sidebar[0].isOpenning
+                isSBarOpen = !isSBarOpen
                 
-                $sidebar[0].isOpenning = isSidebarOpenning
+                $sidebar[0].isOpenning = isSBarOpen
                 $sidebar.toggle()
-                $("#main").css('padding-left', isSidebarOpenning ? 'var(--cui-sidebar-occupy-start, 0)' : 0)
+                $("#main").css('padding-left', isSBarOpen ? 'var(--cui-sidebar-occupy-start, 0)' : 0)
 
-                if (window.isSmallScreen) {
+                if (window.isSmScr) {
                   $shadow.toggle($sidebar[0].isOpenning)
                 } else {
                   $shadow.hide()
                 }
               })
 
-              let prevStateSmallScreen = false
-              function onWindowResize() {
+              let prevStSmScr = false
+              function onWdResize() {
                 let width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
-                window.isSmallScreen = (width < 768)
+                window.isSmScr = (width < 768)
                 
-                if (window.isSmallScreen) {
+                if (window.isSmScr) {
                   $shadow.toggle($sidebar[0].isOpenning)
                   $sidebar.css({
                     position: 'fixed',
@@ -117,15 +117,15 @@
                   $shadow.hide()
                 }
 
-                if (!prevStateSmallScreen && window.isSmallScreen) {
+                if (!prevStSmScr && window.isSmScr) {
                   if ($sidebar[0].isOpenning) {
-                    $("#open-and-close-sidebar").click()
+                    $("#opAndClSidebar").click()
                   }
                 }
-                prevStateSmallScreen = window.isSmallScreen
-                return onWindowResize
+                prevStSmScr = window.isSmScr
+                return onWdResize
               }
-              $(window).resize(onWindowResize())
+              $(window).resize(onWdResize())
             })
           </script>
           
@@ -141,20 +141,20 @@
 
       <div class="body flex-grow-1 px-3">
         <div class="container-lg">
-          <div class="tab-content table-responsive" id="tab-people-manager"></div>
-          <div class="tab-content table-responsive" id="tab-statistic"></div>
-          <div class="tab-content table-responsive" id="tab-upcoming-events"></div>
+          <div class="tab-content table-responsive" id="t-people-mng"></div>
+          <div class="tab-content table-responsive" id="t-stas"></div>
+          <div class="tab-content table-responsive" id="t-uCm-Evts"></div>
         </div>
       </div>
 
       <!-- Special tab content here to zoomable -->
-      <div class="tab-content" id="tab-family-tree" style="position: absolute; top: 0; right: 0; left: 0; bottom: 0; display: none;"></div>
+      <div class="tab-content" id="t-fmTree" style="position: absolute; top: 0; right: 0; left: 0; bottom: 0; display: none;"></div>
     </div>
 
     <script src="./main.js"></script>
     <script>
       $(() => {
-        api.getLoginedUser().then(res => {
+        api.getLoggedU().then(res => {
           let message = res.message
           if (message == 'UNAUTHORIZED') {
             window.location.href = './login.html'
@@ -170,8 +170,8 @@
             $(this).addClass('active')
             $('#main .tab-content').html('').hide()
             $(`#${tabName}`).show()[0]?.load?.()
-            if (window.isSmallScreen) {
-              $("#open-and-close-sidebar").click()
+            if (window.isSmScr) {
+              $("#opAndClSidebar").click()
             }
           })
         })

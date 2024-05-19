@@ -1,19 +1,233 @@
 
-const multiValueDelimiter = '###'
-const imageMaxSizes = 100*1000 // Btyes
-const popUpViewPersonBaseZIndex = 100000
-const defaultAvatarUrl = './resources/default-avatar.jpg'
+const mulValDel = '###'
+const imgMaxSizes = 100*1000 
+const pUViewPBsIdx = 100000
+const defAvtUrl = './resources/default-avatar.jpg'
 
 let randomId = () => `${Math.round(Math.random()*10E12)} r o t c e n o C y l i m a F`.split(' ').reverse().join('')
 
-function popUpAddPerson(addSuccessCallback, { gender, target, asRole, targetGender } = {}) {
-    let fieldFactoryReturnedValues = []
+function popUpLoading() {
+    let $popUp = bigPopUp(`<div class="loader"></div>
+        <style>
+            .loader {
+            width: 60px;
+            aspect-ratio: 4;
+            background: radial-gradient(circle closest-side,#000 90%,#0000) 0/calc(100%/3) 100% space;
+            clip-path: inset(0 100% 0 0);
+            animation: l1 1s steps(4) infinite;
+            }
+            @keyframes l1 {to{clip-path: inset(0 -34% 0 0)}}
+        </style>
+    `, {
+        script: ($popUp) => {
+            $popUp.find('.button-group-background').remove()
+
+            $popUp.find('.content').css({
+                display: 'flex',
+                'justify-content' : 'center',
+                'align-items': 'center',
+                padding: 0
+            })
+        },
+        hideClBtn: true,
+        style: {
+            height: '300px',
+            width: '400px'
+        }
+    })
+
+    return () => $popUp.remove()
+}
+
+function viewImage(imageUrl) {
+    let $element = $(`<div style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; background-color: black; z-index: 200000; display: flex; align-items: center; justify-content: center;">
+        <img src="${imageUrl}" style="max-width: 100%; max-height: 100%;"/>
+        <svg class="icon close">
+            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-x"></use>
+        </svg>
+    </div>`)
+
+    $element.find('.close').click(() => $element.remove()).css({
+        position: 'absolute',
+        right: '20px',
+        top: '20px',
+        color: 'white',
+        'font-size': '4rem',
+        cursor: 'pointer',
+        'border-radius': '50%',
+        padding: '0.4rem',
+        height: '3rem',
+        width: '3rem',
+        'background-color': 'black'
+    })
+
+    $(document.body).append($element)
+}
+
+function puAddField(personId, addScCb) {
+    let html = `<form class="row g-3">
+        <div class="col-md-6">
+            <label for="field-name" class="form-label">Tên trường thông tin <span style="color: red;">*</span></label>
+            <input type="text" class="form-control" id="field-name" placeholder="Ví dụ: Tiểu sử chi tiết" name="name">
+            <div class="invalid-feedback"></div>
+        </div>
+        
+        <div class="col-md-6">
+            <label for="field-type" class="form-label">Kiểu dữ liệu</label>
+            <select id="field-type" class="form-select" name="type">
+                <option value="STRING" selected>Văn bản</option>
+                <option value="IMAGE">Ảnh</option>
+                <option value="DATE">Ngày tháng (dương lịch)</option>
+                <option value="LUNAR_DATE">Ngày tháng (âm lịch)</option>
+                <option value="PERSON">Người</option>
+            </select>
+        </div>
+
+        <div class="col-12">
+            <label for="field-desc" class="form-label">Mô tả về trường thông tin này</label>
+            <input type="text" class="form-control" id="field-desc" name="description" placeholder="Ví dụ: Đây là trường thông tin ghi các tiểu sử của người này">
+        </div>
+
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="f-mval" name="isMultiValue">
+                <label class="form-check-label" for="f-mval">Trường thông tin là đa giá trị</label>
+            </div>
+        </div>
+
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="fForAllPP" name="isForAllPeople">
+                <label class="form-check-label" for="fForAllPP">Thêm cho tất cả người thân của tôi</label>
+            </div>
+        </div>
+    </form>`
+
+    let $nameInput, $nameInpFb
+    bigPopUp(html, {
+        zIndex: 120000,
+        script: ($popUp) => {
+            $nameInput = $popUp.find('input#field-name')
+            $nameInpFb = $nameInput.parent().find('.invalid-feedback')
+
+            $nameInput.keydown(() => {
+                $nameInpFb.hide()
+                $nameInput.removeClass('is-invalid')
+            })
+        },
+        hideClBtn: true,
+        buttons: [
+            {
+                html: 'Thoát',
+                click: $popUp => $popUp.remove()
+            },
+            {
+                html: 'Thêm trường thông tin',
+                type: 'success',
+                click: $popUp => {
+                    if ($nameInput.val() == '') {
+                        $nameInput.addClass('is-invalid')
+                        $nameInpFb.show().html('Không được bỏ trống phần tên!')
+                        return
+                    }
+
+                    let data = {personId}
+                    let inputs = [...$popUp.find('input'), ...$popUp.find('select')]
+                    inputs.forEach(input => {
+                        data[input.name] = (input.type == 'checkbox') ? (input.checked) : input.value
+                    })
+
+                    api.addField({data}).then(({newFieldDef}) => {
+                        addScCb(newFieldDef)
+                        $popUp.remove()
+                    })
+                }
+            }
+        ]
+    })
+}
+
+function puEditField({id, name, description, isForAllPeople}, udSuccCb) {
+    let html = `<form class="row g-3">
+        <h1>Cập nhật thuộc tính trường thông tin</h1>
+        ${isForAllPeople ? '<h6>Đây là trường thông tin chung. Tất cả các thay đổi của trường thông tin này sẽ áp dụng cho tất cả người thân của bạn.</h6>' : ''}
+
+        <div class="col-md-12">
+            <label for="field-name" class="form-label">Tên trường thông tin <span style="color: red;">*</span></label>
+            <input type="text" class="form-control" id="field-name" placeholder="Ví dụ: Tiểu sử chi tiết" name="name" value="${name}">
+            <div class="invalid-feedback"></div>
+        </div>
+
+        <div class="col-12">
+            <label for="field-desc" class="form-label">Mô tả về trường thông tin này</label>
+            <input type="text" class="form-control" id="field-desc" name="description" value="${description}" placeholder="Ví dụ: Đây là trường thông tin ghi các tiểu sử của người này">
+        </div>
+    </form>`
+
+    let $nameInput, $nameInpFb
+    bigPopUp(html, {
+        zIndex: 120000,
+        script: ($popUp) => {
+            $nameInput = $popUp.find('input#field-name')
+            $nameInpFb = $nameInput.parent().find('.invalid-feedback')
+
+            $nameInput.keydown(() => {
+                $nameInpFb.hide()
+                $nameInput.removeClass('is-invalid')
+            })
+        },
+        hideClBtn: true,
+        buttons: [
+            {
+                html: 'Thoát',
+                click: $popUp => $popUp.remove()
+            },
+            {
+                html: 'Xóa trường thông tin',
+                type: 'danger',
+                click: $popUp => {
+                    popUpConfirm('<h5>Bạn có chắc chắn muốn xóa trường thông tin này không?</h5>' + (isForAllPeople ? '<h6 class="text-danger">Tất cả người thân của bạn cũng sẽ mất trường thông tin này!</h6>' : ''), () => {
+                        api.deleteField({id}).then(() => {
+                            $popUp.remove()
+                            udSuccCb({deleted: true})
+                        })
+                    })
+                }
+            },
+            {
+                html: 'Lưu thay đổi',
+                type: 'success',
+                click: $popUp => {
+                    if ($nameInput.val() == '') {
+                        $nameInput.addClass('is-invalid')
+                        $nameInpFb.show().html('Không được bỏ trống phần tên!')
+                        return
+                    }
+
+                    let data = {id}
+                    let inputs = [...$popUp.find('input'), ...$popUp.find('select')]
+                    inputs.forEach(input => {
+                        data[input.name] = (input.type == 'checkbox') ? (input.checked) : input.value
+                    })
+
+                    api.updateField({data}).then(() => {
+                        udSuccCb(data)
+                        $popUp.remove()
+                    })
+                }
+            }
+        ]
+    })
+}
+
+function puAddP(addScCb, { gender, target, asRole, targetGender } = {}) {
+    let fFacReturnVal = []
     bigPopUp('', {
         script: $popUp => {
             let $from = $('<form class="row g-3"></form>')
-            fieldFactoryReturnedValues = [
-                FieldInput$ElementFactory({type: 'STRING', name: 'Tên gọi', placeholder: 'Ví dụ: Ông Nguyễn Văn A', code: 'callname'}),
-                FieldInput$ElementFactory((() => {
+            fFacReturnVal = [
+                gen$fInput({type: 'STRING', name: 'Tên gọi', placeholder: 'Ví dụ: Ông Nguyễn Văn A', code: 'callname'}),
+                gen$fInput((() => {
                     let result = {type: 'GENDER', name: 'Giới tính', code: 'gender'}
                     if (gender) {
                         Object.assign(result, {
@@ -22,10 +236,10 @@ function popUpAddPerson(addSuccessCallback, { gender, target, asRole, targetGend
                     }
                     return result
                 })()),
-                FieldInput$ElementFactory({type: 'DATE', name: 'Ngày sinh', code: 'birthday'}),
-                FieldInput$ElementFactory({type: 'LUNAR_DATE', name: 'Ngày mất', code: 'deathday'}),
-                FieldInput$ElementFactory({type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}),
-                FieldInput$ElementFactory((() => {
+                gen$fInput({type: 'DATE', name: 'Ngày sinh', code: 'birthday'}),
+                gen$fInput({type: 'LUNAR_DATE', name: 'Ngày mất', code: 'deathday'}),
+                gen$fInput({type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}),
+                gen$fInput((() => {
                     let result = {type: 'PERSON', name: 'Bố', code: 'father'}
                     if (asRole == 'child' && targetGender == 'Nam') {
                         Object.assign(result, {
@@ -35,7 +249,7 @@ function popUpAddPerson(addSuccessCallback, { gender, target, asRole, targetGend
                     }
                     return result
                 })()),
-                FieldInput$ElementFactory((() => {
+                gen$fInput((() => {
                     let result = {type: 'PERSON', name: 'Mẹ', code: 'mother'}
                     if (asRole == 'child' && targetGender == 'Nữ') {
                         Object.assign(result, {
@@ -45,28 +259,28 @@ function popUpAddPerson(addSuccessCallback, { gender, target, asRole, targetGend
                     }
                     return result
                 })()),
-                FieldInput$ElementFactory({type: 'IMAGE', name: 'Ảnh', code: 'avatar'})
+                gen$fInput({type: 'IMAGE', name: 'Ảnh', code: 'avatar'})
             ]
-            $from.append(fieldFactoryReturnedValues.map(i => i[0]))
+            $from.append(fFacReturnVal.map(i => i[0]))
 
             $popUp.find('.content').append($from)
         },
-        hideCloseButton: true,
+        hideClBtn: true,
         buttons: [
             {
                 html: 'Thoát',
-                click: $popUp => {$popUp.remove(); $(document.body).removeClass('stop-scrolling')}
+                click: $popUp => {$popUp.remove(); $(document.body).removeClass('stScroll')}
             },
             {
                 html: 'Thêm người thân',
                 type: 'success',
                 click: $popUp => {
-                    if (fieldFactoryReturnedValues.every(i => i[1]())) { // All fields valid
-                        let data = fieldFactoryReturnedValues.map(i => i[2]())
+                    if (fFacReturnVal.every(i => i[1]())) { 
+                        let data = fFacReturnVal.map(i => i[2]())
                         api.addPerson({data, target, asRole}).then(() => {
                             $popUp.remove()
-                            $(document.body).removeClass('stop-scrolling')
-                            addSuccessCallback()
+                            $(document.body).removeClass('stScroll')
+                            addScCb()
                         })
                     }
                 }
@@ -75,7 +289,7 @@ function popUpAddPerson(addSuccessCallback, { gender, target, asRole, targetGend
     })
 }
 
-function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, pickedIds}) {
+function puPickP(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, pickedIds}) {
     isMultiValue = isMultiValue || false
     maleOnly = maleOnly || false
     femaleOnly = femaleOnly || false
@@ -84,7 +298,7 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
     pickedIds = pickedIds || []
     pickedIds = new Set(pickedIds)
 
-    let getPickedPeople = null
+    let getPickedPP = null
 
     bigPopUp(`
         ${maleOnly ? '<h1>Danh sách người thân có giới tính Nam</h1>' : ''}
@@ -99,7 +313,7 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
     {
         zIndex: 120000,
         script: ($popUp, $content) => {
-            api.getPeopleOfUserBaseInfo().then(people => {
+            api.getPPBsInf().then(people => {
                 if (maleOnly) people = people.filter(({gender}) => gender == 'Nam')
                 else if (femaleOnly) people = people.filter(({gender}) => gender != 'Nam')
                 people = people.filter(({id}) => !exceptIds.has(id))
@@ -109,12 +323,13 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
 
                 people.forEach(person => {
                     let {id, callname, avatar, searchString} = person
+                    searchString = (searchString && searchString != '') ? searchString : callname
                     let $person = $(`<tr class="align-middle">
                         <td style="width: 3em; position: relative;"><input class="form-check-input" type="${isMultiValue ? 'checkbox' : 'radio'}" style="position: absolute;
                             top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0;" ${isMultiValue ? '' : `name="${rdName}"`} ${pickedIds.has(id) ? 'checked' : ''}></td>
                         <td style="width: 3em;">
                             <div class="avatar avatar-md">
-                                <img class="avatar-img" src="${avatar || defaultAvatarUrl}">
+                                <img class="avatar-img" src="${avatar || defAvtUrl}">
                             </div>
                         </td>
                         <td><div>${callname}</div></td>
@@ -125,9 +340,9 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
 
                     searchString = searchString.toLowerCase()
                     while (searchString.includes('  ')) searchString = searchString.replaceAll('  ', ' ').trim()
-                    let searchString2 = new Set(searchString.split(' '))
-                    let searchStringNormalized2 = new Set(searchString.split(' ').map(w => removeAccents(w)))
-                    let searchStringNormalized = [...searchStringNormalized2].join(' ')
+                    let sstr2 = new Set(searchString.split(' '))
+                    let sStrNorm2 = new Set(searchString.split(' ').map(w => rmAccents(w)))
+                    let sStrNorm = [...sStrNorm2].join(' ')
 
                     $person.score = (vs, nvs) => {
                         let score = 0
@@ -136,12 +351,12 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
                         }
 
                         for (let v of nvs) {
-                            if (searchStringNormalized.includes(v)) score += 5
-                            if (searchStringNormalized2.has(v)) score += 10
+                            if (sStrNorm.includes(v)) score += 5
+                            if (sStrNorm2.has(v)) score += 10
                         }
                         for (let v of vs) {
                             if (searchString.includes(v)) score += 10
-                            if (searchString2.has(v)) score += 20
+                            if (sstr2.has(v)) score += 20
                         }
 
                         return score
@@ -156,7 +371,7 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
                     
                     while (value.includes('  ')) value = value.replaceAll('  ', ' ').trim()
                     let vs = [...new Set(value.split(' '))]
-                    let nvs = [...new Set(vs.map(v => removeAccents(v)))]
+                    let nvs = [...new Set(vs.map(v => rmAccents(v)))]
                     
                     let scores = value == '' ? list$persons.map(_ => 1) : list$persons.map($person => $person.score(vs, nvs))
                     let indices = range(list$persons.length)
@@ -174,37 +389,37 @@ function popUpPickPerson(callback, {isMultiValue, maleOnly, femaleOnly, exceptId
 
                 $content.find('.delete-all').click(() => list$persons.forEach($person => $person.find('input')[0].checked = false))
 
-                getPickedPeople = () => list$persons.filter($person => $person.choosed()).map($person => $person.getPerson())
+                getPickedPP = () => list$persons.filter($person => $person.choosed()).map($person => $person.getPerson())
             })
         },
-        hideCloseButton: true,
+        hideClBtn: true,
         buttons: [{
             html: 'Xác nhận',
             type: 'success',
             click: $popUp => {
                 $popUp.remove()
-                callback(getPickedPeople ? getPickedPeople() : [])
+                callback(getPickedPP ? getPickedPP() : [])
             }
         }]
     })
 }
 
-function FieldInput$ElementFactory({id, code, type, placeholder, name, description, isMultiValue, value, isForAllPeople, personId, disabled}, updateFieldDefinitionCallback) {
+function gen$fInput({id, code, type, placeholder, name, description, isMultiValue, value, isForAllPeople, personId, disabled}, udFieldDefCb) {
     value = value || ''
     let $element, validate, getValue, valueChanged
     let labelId = randomId()
 
-    function dateValidation(s, isLunarDate = false, testSupportRange = false) {
-        // Return [isValid, Message if not valid]
-        if (!DateLib.isInValidForm(s)) {
+    function dateValid(s, isLunarDate = false, tSpRange = false) {
+        
+        if (!DateLib.isSuiForm(s)) {
             return [false, 'Sai định dạng NGÀY/THÁNG/NĂM!']
         }
 
-        if (testSupportRange && (!DateLib.isDateInSupportRange(s))) {
+        if (tSpRange && (!DateLib.isDInSpRange(s))) {
             return [false, 'Đối với kiểu dữ liệu này, chỉ hỗ trợ ngày tháng từ năm 1801 đến năm 2198!']
         }
 
-        if (!(isLunarDate ? DateLib.isValidLunarDate(s) : DateLib.isValidDate(s))) {
+        if (!(isLunarDate ? DateLib.isValidLDate(s) : DateLib.isValidDate(s))) {
             return [false, 'Không tồn tại ngày tháng này!']
         }
 
@@ -212,7 +427,378 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
     }
 
     if (isMultiValue) {
-        
+        let btAddonId = randomId()
+        let counter = 0
+        let idxToVal = {}
+        let addValue = val => {
+            idxToVal[++counter] = val
+            return counter
+        }
+        let removeValue = index => delete idxToVal[index]
+        let sAddedVl 
+
+        switch (type) {
+            case 'STRING':
+                $element = $(`<div class="col-12">
+                    <label for="${labelId}" class="form-label">${name}</label>
+                    <div class="input-group mb-3" style="margin-bottom: 0 !important;">
+                        <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : ''}>
+                        <button class="btn btn-outline-secondary" type="button" id="${btAddonId}">Thêm giá trị</button>
+                    </div>
+                    
+                    <div class="card value-list" style="width: 100%;">
+                        <div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>
+                        <ul class="list-group list-group-flush"></ul>
+                    </div>
+                </div>`)
+
+                sAddedVl = function (val) {
+                    let index = addValue(val)
+
+                    $element.find('.value-list .card-header').remove()
+
+                    let $value = $(`<li class="list-group-item" style="position: relative;">
+                        ${val}
+                        <svg class="icon" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use>
+                        </svg>
+                    </li>`)
+
+                    $value.find('svg').click(() => {
+                        removeValue(index)
+                        $value.remove()
+                        if ($element.find('ul > li').length == 0) {
+                            $element.find('.value-list').append('<div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>')
+                        }
+                    })
+
+                    $element.find('.value-list ul').append($value)
+                }
+
+                $element.find(`#${btAddonId}`).click(() => {
+                    let $input = $element.find(`#${labelId}`)
+                    let value = $input.val()
+                    if (value == '') {
+                        return
+                    }
+                    $input.val('')
+                    sAddedVl(value)
+                })
+                break
+            case 'DATE':
+                $element = $(`<div class="col-md-5">
+                    <label for="${labelId}" class="form-label">${name}</label>
+                    <div class="input-group mb-3" style="margin-bottom: 0 !important;">
+                        <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : 'placeholder="Ngày dương lịch định dạng NGÀY/THÁNG/NĂM"'}>
+                        <button class="btn btn-outline-secondary" type="button" id="${btAddonId}" style="border-radius: var(--cui-btn-border-radius);
+                        border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            Thêm giá trị
+                        </button>
+                        <div class="invalid-feedback" style="margin-top: 0;"></div>
+                    </div>
+                    
+                    <div class="card value-list" style="width: 100%;">
+                        <div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>
+                        <ul class="list-group list-group-flush"></ul>
+                    </div>
+                </div>`)
+
+                let $input = $element.find(`#${labelId}`)
+                let $feedBack = $element.find(`.invalid-feedback`)
+
+                $input.keydown(() => {
+                    $input.removeClass('is-invalid')
+                    $feedBack.hide()
+                })
+
+                sAddedVl = function (val) {
+                    let index = addValue(val)
+
+                    $element.find('.value-list .card-header').remove()
+
+                    let $value = $(`<li class="list-group-item" style="position: relative;">
+                        ${val}
+                        <svg class="icon" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use>
+                        </svg>
+                    </li>`)
+
+                    $value.find('svg').click(() => {
+                        removeValue(index)
+                        $value.remove()
+                        if ($element.find('ul > li').length == 0) {
+                            $element.find('.value-list').append('<div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>')
+                        }
+                    })
+
+                    $element.find('.value-list ul').append($value)
+                }
+
+                $element.find(`#${btAddonId}`).click(() => {
+                    let $input = $element.find(`#${labelId}`)
+                    let value = $input.val()
+                    if (value == '') {
+                        return
+                    }
+
+                    let [isValid, message] = dateValid(value)
+                    if (isValid) {
+                        $input.val('')
+                        sAddedVl(value)
+                        return
+                    }
+
+                    $input.addClass('is-invalid')
+                    $feedBack.show().html(message)
+                })
+                break
+            case 'LUNAR_DATE':
+                let id1 = randomId(), id2 = randomId(), rdName = randomId()
+                $element = $(`<div class="col-md-5">
+                    <label for="${labelId}" class="form-label">${name}</label>
+                    <div class="row" style="margin: 0;">
+                        <div class="form-check col-md-6">
+                            <input class="form-check-input" type="radio" id="${id1}" name="${rdName}">
+                            <label class="form-check-label" for="${id1}">
+                                Dương lịch
+                            </label>
+                        </div>
+                        <div class="form-check col-md-6">
+                            <input class="form-check-input" type="radio" id="${id2}" name="${rdName}" checked>
+                            <label class="form-check-label" for="${id2}">
+                                Âm lịch
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3" style="margin-bottom: 0 !important;">
+                        <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : 'placeholder="Ngày âm lịch định dạng NGÀY/THÁNG/NĂM"'}>
+                        <button class="btn btn-outline-secondary" type="button" id="${btAddonId}" style="border-radius: var(--cui-btn-border-radius);
+                        border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            Thêm giá trị
+                        </button>
+                        <div class="invalid-feedback" style="margin-top: 0;"></div>
+                    </div>
+                    
+                    <div class="card value-list" style="width: 100%;">
+                        <div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>
+                        <ul class="list-group list-group-flush"></ul>
+                    </div>
+                </div>`)
+
+                let $input2 = $element.find(`#${labelId}`)
+                let $feedBack2 = $element.find(`.invalid-feedback`)
+
+                $input2.keydown(() => {
+                    $input2.removeClass('is-invalid')
+                    $feedBack2.hide()
+                })
+
+                $element.find(`#${id1}`).click(() => {
+                    $input2.attr('placeholder', 'Ngày dương lịch định dạng NGÀY/THÁNG/NĂM')
+                })
+                $element.find(`#${id2}`).click(() => {
+                    $input2.attr('placeholder', 'Ngày âm lịch định dạng NGÀY/THÁNG/NĂM')
+                })
+
+                sAddedVl = function (val) {
+                    let index = addValue(val)
+                    $element.find('.value-list .card-header').remove()
+    
+                    let $value = $(`<li class="list-group-item" style="position: relative;">
+                        ${val} ~ ${DateLib.lDateToDate(val)} dương lịch
+                        <svg class="icon" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use>
+                        </svg>
+                    </li>`)
+    
+                    $value.find('svg').click(() => {
+                        removeValue(index)
+                        $value.remove()
+                        if ($element.find('ul > li').length == 0) {
+                            $element.find('.value-list').append('<div class="card-header" style="color: #9da5b1; border: none;">Chưa có giá trị</div>')
+                        }
+                    })
+    
+                    $element.find('.value-list ul').append($value)
+                }
+
+                $element.find(`#${btAddonId}`).click(() => {
+                    let value = $input2.val()
+                    if (value == '') {
+                        return
+                    }
+
+                    let isLunarDate = $element.find(`#${id2}`)[0].checked
+
+                    let [isValid, message] = dateValid(value, isLunarDate, true)
+                    if (isValid) {
+                        $input2.val('')
+                        sAddedVl(isLunarDate ? value : DateLib.dateToLDate(value))
+                        return
+                    }
+
+                    $input2.addClass('is-invalid')
+                    $feedBack2.show().html(message)
+                })
+                break
+            case 'PERSON':
+                $element = $(`<div class="col-md-3">
+                    <label for="${labelId}" class="form-label">${name}</label>
+                    <div class="input-group" style="position: relative;">
+                        <input type="text" class="form-control" value="Chọn..." readonly style="cursor: pointer;">
+                        <button class="btn btn-outline-secondary" type="button" id="${labelId}">Chọn</button>
+                    </div>
+                    
+                    <div class="card value-list" style="width: 100%;">
+                        <div class="card-header" style="color: #9da5b1; border: none;">Chưa có ai</div>
+                        <ul class="list-group list-group-flush"></ul>
+                    </div>
+                </div>`)
+                
+                let choosedPIds = []
+
+                sAddedVl = function (val) {
+                    let cFromPuPickPerson = Array.isArray(val)
+
+                    function _add(person) {
+                        
+
+                        $element.find('.value-list .card-header').remove()
+
+                        let id = cFromPuPickPerson ? person.id : person
+                        let index = addValue(id)
+                        choosedPIds.push(id)
+
+                        let $person = $(`<li class="list-group-item" style="position: relative; height: 4rem; display: flex; align-items: center;">
+                            <div class="name">${person.callname || 'Đang tải...'}</div>
+                        </li>`)
+
+                        $element.find('.value-list ul').append($person)
+
+                        function innerAddRmnEvts(avatar) {
+                            $person.prepend(`<img src="${avatar || defAvtUrl}" style="height: 100%; margin-right: 0.8rem;" class="my-img">`)
+                            $person.append(
+                                $(`<svg class="icon" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                                    <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use>
+                                </svg>`).click(() => {
+                                    removeValue(index)
+                                    $person.remove()
+                                    choosedPIds = choosedPIds.filter(_id => _id != id)
+                                    if ($element.find('ul > li').length == 0) {
+                                        $element.find('.value-list').append('<div class="card-header" style="color: #9da5b1; border: none;">Chưa có ai</div>')
+                                    }
+                                })
+                            )
+                        }
+    
+                        if (cFromPuPickPerson) {
+                            innerAddRmnEvts(person.avatar)
+                        } else {
+                            api.getPBsInf({id: person}).then(({avatar, callname}) => {
+                                $person.find('.name').html(callname)
+                                innerAddRmnEvts(avatar)
+                            })
+                        }
+                    }
+
+                    if (cFromPuPickPerson) {
+                        val.forEach(person => _add(person))
+                    } else {
+                        _add(val)
+                    }
+                }
+                $element.find('button').click(() => {
+                    puPickP(sAddedVl, {
+                        isMultiValue,
+                        maleOnly: code == 'father' ? true : false,
+                        femaleOnly: code == 'mother' ? true : false,
+                        exceptIds: choosedPIds
+                    })
+                })
+                break
+            case 'IMAGE':
+                $element = $(`<div class="mb-3">
+                    <label for="${labelId}" class="form-label">${name}</label>
+                    <div class="input-group mb-3">
+                        <button class="btn btn-outline-secondary add-image" type="button">Tải ảnh lên</button>
+                        <input type="text" class="form-control" id="${labelId}" value="Chưa có ảnh được chọn" readonly style="cursor: pointer">
+                    </div>
+                    <input type="file" style="display:none;" accept="image/*">
+                    <div class="preview-image">
+                        <button type="button" class="btn btn-primary add-image" style="display:block;">Thêm ảnh</button>
+                        <div class="images" style="display: flex; flex-wrap: wrap;">
+                            
+                        </div>
+                    </div>
+                </div>`)
+
+                $element.find('button.add-image').click(() => $element.find('input[type="file"]').click())
+                $element.find('.preview-image').hide()
+
+                sAddedVl = function (val) {
+                    let index = addValue(val)
+
+                    let $imageGroup = $(`<div class="group" style="position: relative; width: max-content; height: max-content; margin-right: 1rem; margin-top: 1rem;">
+                        <img src="${val}" style="max-width: 100%; max-height: 15rem; border-radius: 0.375rem; border: 1px solid var(--cui-input-border-color, #b1b7c1); cursor: pointer;">
+                        <svg class="icon close">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-x"></use>
+                        </svg>
+                    </div>`)
+
+                    $imageGroup.find('img').click(function () { viewImage($(this).attr('src')) })
+
+                    $imageGroup.find('.close').css({
+                        position: 'absolute',
+                        right: '20px',
+                        top: '20px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        'border-radius': '50%',
+                        padding: '0.3rem',
+                        height: '2rem',
+                        width: '2rem',
+                        'background-color': 'black'
+                    })
+                    .click(() => {
+                        removeValue(index)
+                        $imageGroup.remove()
+
+                        if ($element.find('.preview-image .group').length == 0) {
+                            $element.find('.input-group').show()
+                            $element.find('.preview-image').hide()
+                        }
+                    })
+
+                    $element.find('.preview-image').show()
+                    .find('.images').append($imageGroup)
+
+                    $element.find('.input-group').hide()
+                }
+
+                $element.find('input[type="file"]').change(function () {
+                    let input = this
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = (e) => {
+                            resizeImage(e.target.result, imgMaxSizes).then(sAddedVl)
+                        }
+                        reader.readAsDataURL(input.files[0])
+                        input.value = ''
+                    }
+                })
+
+                break
+        }
+
+        if (value != '') {
+            value.split(mulValDel).forEach(v => sAddedVl(v))
+        }
+
+        let cntInitEnd = counter
+
+        validate = () => true
+        getValue = () => range(counter + 1).filter(i => idxToVal[i]).map(i => idxToVal[i]).join(mulValDel)
+        valueChanged = () => range(cntInitEnd + 1, counter + 1).some(i => idxToVal[i])
     }
     else {
         switch (type) {
@@ -251,7 +837,7 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                     let val = $element.find('input').val()
                     if (val == '') return true
 
-                    let [isValid, message] = dateValidation(val)
+                    let [isValid, message] = dateValid(val)
 
                     if (isValid) {
                         return true
@@ -264,7 +850,7 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                 }
                 getValue = () => {
                     let val = $element.find('input').val()
-                    return val == '' ? '' : DateLib.shortenDateString(val)
+                    return val == '' ? '' : DateLib.shtDStr(val)
                 }
                 valueChanged = () => value != getValue()
                 break
@@ -313,7 +899,7 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                     if (val == '') return true
                     let isLunarDate = $element.find(`#${id2}`)[0].checked
 
-                    let [isValid, message] = dateValidation(val, isLunarDate, true)
+                    let [isValid, message] = dateValid(val, isLunarDate, true)
 
                     if (isValid) return true
 
@@ -326,17 +912,17 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                     if (val == '') return ''
                     let isLunarDate = $element.find(`#${id2}`)[0].checked
 
-                    return DateLib.shortenDateString(isLunarDate ? val : DateLib.dateToLunarDate(val))
+                    return DateLib.shtDStr(isLunarDate ? val : DateLib.dateToLDate(val))
                 }
                 valueChanged = () => value != getValue()
                 break
             case 'GENDER':
                 let alertText = ''
                 if (!value) {
-                    // Add person mode
+                    
                     alertText = 'Đây là thuộc tính quan trọng, ảnh hưởng đến hầu hết các chức năng của trang web!'
                 } else {
-                    // Edit person mode
+                    
                     alertText = 'Nếu giới tính bị thay đổi, mối quan hệ (bố / mẹ) của con cái người này sẽ bị xóa!'
                 }
                 let id3 = randomId(), id4 = randomId(), rdName2 = randomId()
@@ -379,27 +965,27 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                 </div>`)
                 $element.find('div.show-choosed-person').hide()
                 $element.find('label').click(() => {
-                    if (!choosedPersonId) $element.find('button').click()
+                    if (!choosedPIds) $element.find('button').click()
                 })
-                let choosedPersonId = ''
-                function displayChoosedPerson([person]) {
+                let choosedPIds = ''
+                function displayChoosedP([person]) {
                     if (!person) return
-                    choosedPersonId = person.id
+                    choosedPIds = person.id
                     $element.find('button').html('Xóa')
-                    $element.find('div.show-choosed-person img').attr('src', person.avatar || defaultAvatarUrl)
+                    $element.find('div.show-choosed-person img').attr('src', person.avatar || defAvtUrl)
                     $element.find('div.show-choosed-person .name').html(person.callname)
                     $element.find('div.show-choosed-person').show()
                     $element.find('input').addClass('show-choosed-person').val('')
                 }
                 $element.find('button').click(() => {
-                    if (choosedPersonId != '') {
+                    if (choosedPIds != '') {
                         $element.find('button').html('Chọn')
-                        choosedPersonId = ''
+                        choosedPIds = ''
                         $element.find('input').val('Chọn...')
                         $element.find('div.show-choosed-person').hide()
                         $element.find('input').removeClass('show-choosed-person')
                     } else {
-                        popUpPickPerson(displayChoosedPerson, {
+                        puPickP(displayChoosedP, {
                             isMultiValue,
                             maleOnly: code == 'father' ? true : false,
                             femaleOnly: code == 'mother' ? true : false,
@@ -410,14 +996,14 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                 if (value && value != '') {
                     $element.find('input').val('Đang tải...')
                     $element.find('button').hide()
-                    api.getPersonBaseInfo({id: value}).then(result => {
+                    api.getPBsInf({id: value}).then(result => {
                         $element.find('input').val('Chọn...')
                         $element.find('button').show()
-                        displayChoosedPerson([result])
+                        displayChoosedP([result])
                     })
                 }
                 validate = () => true
-                getValue = () => choosedPersonId
+                getValue = () => choosedPIds
                 valueChanged = () => value != getValue()
                 break
             case 'IMAGE':
@@ -457,7 +1043,7 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
                         var reader = new FileReader();
                         reader.onload = function (e) {
                             imageUrl = e.target.result
-                            resizeImage(imageUrl, imageMaxSizes).then(chooseImage)
+                            resizeImage(imageUrl, imgMaxSizes).then(chooseImage)
                             input.value = ''
                         };
                         reader.readAsDataURL(input.files[0])
@@ -484,15 +1070,15 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
 
     let fieldDeleted = false
 
-    let valueChanged2 = () => {
+    let vlChanged2 = () => {
         if (fieldDeleted) return false
         return valueChanged()
     }
 
-    if (!code) { // Custom field, so can be changed
+    if (!code) { 
         let $label = $element.find(`label[for="${labelId}"]`)
 
-        function assignOperations() {
+        function assOps() {
             let $operations = $(`<div style="display: inline-block; margin-left: 1rem;">
                 <svg class="icon me-2 edit"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg>
             </div>`)
@@ -506,40 +1092,550 @@ function FieldInput$ElementFactory({id, code, type, placeholder, name, descripti
             })
 
             $operations.find('svg.edit').click(() => {
-                popUpEditField({id, name, description, isForAllPeople}, (newField) => {
+                puEditField({id, name, description, isForAllPeople}, (newField) => {
                     let deleted = newField.deleted
                     if (deleted) {
                         fieldDeleted = true
                         $element.remove()
-                        updateFieldDefinitionCallback(isForAllPeople)
+                        udFieldDefCb(isForAllPeople)
                         return
                     }
 
                     name = newField.name
                     description = newField.description
 
-                    // Handle description
-                    // ....
+                    
+                    
                     
                     $label.html(newField.name)
-                    assignOperations()
+                    assOps()
 
-                    updateFieldDefinitionCallback(isForAllPeople)
+                    udFieldDefCb(isForAllPeople)
                 })
             })
 
             $label.append($operations)
         }
 
-        assignOperations()
+        assOps()
     }
 
-    return [$element, validate, getValue2, valueChanged2]
+    return [$element, validate, getValue2, vlChanged2]
+}
+
+function puEditP(fieldValues, personId, udSuccCb) {
+    let fFacReturnVal = []
+    let newFieldForAllP = false
+    let hasNewFForP = false
+
+    function udFieldDefCb(fieldDefUdForAllPP) {
+        hasNewFForP = true
+        newFieldForAllP = newFieldForAllP || fieldDefUdForAllPP
+    }
+    bigPopUp('', {
+        zIndex: 110000,
+        script: $popUp => {
+            fieldValues = makeCopy(fieldValues)
+            fieldValues.find(({code}) => code == 'gender').type = 'GENDER'
+            let $from = $('<form class="row g-3"></form>')
+            fFacReturnVal = fieldValues.map(fV => gen$fInput(fV, udFieldDefCb))
+            $from.append(fFacReturnVal.map(i => i[0]))
+
+            let $addField = $(`<div class="col-12" style="margin-top: 5rem;">
+                <button type="button" class="btn btn-light"><svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-plus"></use></svg> Thêm trường thông tin</button>
+            </div>`)
+            $addField.find('button').click(() => {
+                puAddField(personId, function addFSuccCb(newFieldDef) {
+                    newFieldForAllP = newFieldDef.isForAllPeople
+                    hasNewFForP = true
+
+                    let temp = gen$fInput(newFieldDef, udFieldDefCb)
+                    $addField.before(temp[0])
+                    fFacReturnVal.push(temp)
+                })
+            })
+            $from.append($addField)
+        
+            $popUp.find('.content').append($from)
+        },
+        hideClBtn: true,
+        buttons: [
+            {
+                html: 'Thoát',
+                click: $popUp => {
+                    if (hasNewFForP) {
+                        udSuccCb(personId, [], false, true, newFieldForAllP)
+                    }
+                    $popUp.remove()
+                }
+            },
+            {
+                html: 'Lưu thay đổi',
+                type: 'success',
+                click: $popUp => {
+                    if (fFacReturnVal.every(i => i[1]())) { 
+                        let filterChanged = fFacReturnVal.filter(i => i[3]())
+                        function udSucc(valChanged = true) {
+                            $popUp.remove()
+                            if (valChanged) {
+                                let udRelShip = fieldValues.some(({code}) => ['father', 'mother', 'gender'].includes(code))
+                                udSuccCb(personId, fieldValues, udRelShip, hasNewFForP, newFieldForAllP)
+                            }
+                        }
+
+                        if (filterChanged.length == 0) {
+                            if (hasNewFForP) {
+                                $popUp.remove()
+                                udSuccCb(personId, [], false, true, newFieldForAllP)
+                                return
+                            }
+                            udSucc(false)
+                            return
+                        }
+
+                        let fieldValues = filterChanged.map(i => i[2]())
+                        if (fieldValues.some(({code}) => code == 'gender')) {
+                            popUpConfirm('Bạn có chắc chắn muốn thay đổi giới tính không? Nếu thay đổi, những mối quan hệ bố/mẹ của người này với con cái của họ sẽ bị xóa!', doUpdate)
+                            return
+                        }
+
+                        doUpdate()
+
+                        function doUpdate() {
+                            let data = fieldValues.map(fV => {
+                                let newObj = Object.assign(fV, {personId})
+                                newObj.fieldDefinitionId = newObj.id
+                                newObj.fieldDefinitionCode = newObj.code
+                                
+                                Object.keys(newObj).forEach(key => {
+                                    if (!['fieldDefinitionId', 'value', 'personId', 'fieldDefinitionCode', 'code'].includes(key)) {
+                                        delete newObj[key]
+                                    }
+                                })
+    
+                                return newObj
+                            })
+                            
+                            api.udFiledVals({data}).then(udSucc)
+                        }
+                    }
+                }
+            }
+        ]
+    })
+}
+
+let udCbStack = []
+function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
+    let {callname, gender, birthday, deathday, avatar, id} = person
+    let showedPId = id
+    let html = `
+        <div class="row" style="margin-bottom: 3rem;">
+            <div class="col-md-4" style="display: flex; justify-content: center; align-items: center;">
+                <img src="${avatar || defAvtUrl}" alt="" class="my-img" style="height: 12rem;">
+            </div>
+            <div class="col-md-8" style="display: flex; align-items: center;">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1>${callname}</h1>
+                        <h4>Giới tính: ${gender}</h4>
+                        <h4>Ngày sinh: ${birthday || 'Không rõ'}</h4>
+                        <h4>Ngày mất: ${deathday ? `${DateLib.lDateToDate(deathday)} (${deathday} âm lịch)` : 'Không rõ'}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-4 col-md-5">
+                <table class="table border mb-0 rel-pp">
+                    <thead class="table-light fw-semibold">
+                        <tr class="align-middle">
+                            <th class="text-center">
+                            <svg class="icon">
+                                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
+                            </svg>
+                            </th>
+                            <th>Người thân</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="loading">
+                            <td></td>
+                            <td>Đang tải...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row col-md-8 fields" style="margin: 0 -0.7rem;">
+            
+            </div>
+        </div>
+    `
+
+    udCbStack[udCbIdx + 1] = function innerUdCb(personId, fVChanged, udRelShip, udPHasNewField = false, allPPHasNewField = false) {
+        
+        
+        
+        
+        
+
+        udCbStack[udCbIdx](personId, fVChanged, udRelShip, false, allPPHasNewField)
+
+        
+        if (udPHasNewField || allPPHasNewField || udRelShip || (personId == showedPId)) {
+            $popUp.remove()
+            udCbStack[udCbIdx + 1] = null
+
+            let nPuClosed = false
+            bigPopUp('', {
+                zIndex,
+                script: ($popUp, _, rmCb) => {
+                    api.getPBsInf({id: showedPId}).then(person => {
+                        if (nPuClosed) return
+                        $popUp.remove()
+                        rmCb()
+                        puViewP(person, udCbIdx, zIndex, firstTime)
+                    })
+                },
+                clCb: () => {
+                    if (firstTime) $(document.body).removeClass('stScroll')
+                    udCbStack.pop()
+                }
+            })
+
+            return
+        }
+
+        let newPerson = {id: personId}
+        fVChanged.forEach(({code, value}) => {
+            newPerson[code] = value
+        })
+
+        $popUp.find('.p-ref-wrap').each((index, elem) => {
+            elem.udCb(newPerson)
+        })
+    }
+    
+    let fVFull = null
+    let $popUp = bigPopUp(html, {
+        zIndex,
+        script: ($popUp) => {
+            let $editButton = null
+            $popUp.find('button').each((index, button) => {
+                let $button = $(button)
+                if ($button.find('svg').length != 0 && $button.html().includes('Chỉnh sửa thông tin')) {
+                    $editButton = $button
+                }
+            })
+            $editButton.hide()
+
+            api.getPDeatilInf({id}).then(({id, father, mother, spouse, fieldValues, siblings, children}) => {
+                fVFull = [...fieldValues]
+                $editButton.show()
+
+                fieldValues = fieldValues.filter(({fieldDefinitionCode}) => !fieldDefinitionCode)
+                $popUp.find('.rel-pp tbody .loading').remove()
+                
+                let parts = [], texts = []
+                if (spouse) {
+                    parts.push([spouse])
+                    texts.push('Vợ / Chồng')
+                }
+                if (father || mother) {
+                    let {sameFather, sameMother} = siblings
+                    if (father) {
+                        parts.push([father])
+                        texts.push('Bố')
+                    }
+                    if (mother) {
+                        parts.push([mother])
+                        texts.push('Mẹ')
+                    }
+
+                    let sameFtIds = sameFather.map(({id}) => id)
+                    let sameMtIds = sameMother.map(({id}) => id)
+                    let sameFtIdsSet = new Set(sameFtIds)
+                    let sameMtIdsSet = new Set(sameMtIds)
+
+                    let sameFtOnly = sameFather.filter(({id}) => !sameMtIdsSet.has(id))
+                    let sameMtOnly = sameMother.filter(({id}) => !sameFtIdsSet.has(id))
+                    let sameBothFtAndMt = sameFather.filter(({id}) => sameMtIdsSet.has(id) && id != showedPId)
+
+                    parts.push(sameBothFtAndMt, sameFtOnly, sameMtOnly)
+                    texts.push('Anh em', 'Anh em cùng cha khác mẹ', 'Anh em cùng mẹ khác cha')
+                } else if (children.length == 0 && (!spouse)) {
+                    $popUp.find('.rel-pp tbody').append(`<tr>
+                        <td></td>
+                        <td>Không có thông tin</td>
+                    </tr>`)
+                }
+
+                parts.push(children)
+                texts.push('Con ruột')
+
+                parts.forEach((part, i) => {
+                    part.forEach(relPerson => {
+                        let {avatar, id, callname} = relPerson
+
+                        let $element = $(`<tr style="cursor: pointer;" class="p-ref-wrap">
+                            <td class="text-center">
+                                <div class="avatar avatar-md">
+                                    <img class="avatar-img my-img person-reference-img" src="${avatar || defAvtUrl}">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="p-ref-name">${callname}</div>
+                                <div class="small text-medium-emphasis">${texts[i]}</div>
+                            </td>
+                        </tr>`)
+                        .click(() => puViewP(relPerson, udCbIdx + 1, zIndex + 1))
+                        .on('mouseenter', function () { $(this).css('background-color', '#f7f7f9') })
+                        .on('mouseleave', function () { $(this).css('background-color', 'white') })
+
+                        $popUp.find('.rel-pp tbody').append($element)
+
+                        $element[0].udCb = (newPerson) => {
+                            if (newPerson.id != id) return
+                            Object.assign(relPerson, newPerson)
+
+                            $element.find('.person-reference-img').attr('src', newPerson.avatar || defAvtUrl)
+                            $element.find('.p-ref-name').html(newPerson.callname)
+                        }
+                    })
+                })
+
+                fieldValues.forEach(fieldValue => {
+                    $popUp.find('.row > .fields').append(gen$fDisplay(Object.assign(fieldValue, { pTypeAddonInf: {udCbIdx: udCbIdx + 1, zIndex: zIndex + 1} })))
+                })
+            })
+        },
+        clCb: () => {
+            if (firstTime) $(document.body).removeClass('stScroll')
+            udCbStack.pop()
+        },
+        buttons: [{
+            html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg> Chỉnh sửa thông tin',
+            type: 'info',
+            click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
+        }]
+    })
+}
+
+function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, pTypeAddonInf}) {
+    
+    value = value || ''
+    let $element
+    let randomId = () => `${Math.round(Math.random()*10E12)} r o t c e n o C y l i m a F`.split(' ').reverse().join('')
+    let labelId = randomId()
+
+    if (isMultiValue) {
+        switch (type) {
+            case 'STRING':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
+                            ${value != '' ? value.split(mulValDel).map(v => `<li class="list-group-item">${v}</li>`).join('') : ''}
+                        </ul>
+                    </div>
+                </div>`)
+                break
+            case 'DATE':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
+                            ${value != '' ? value.split(mulValDel).map(v => `<li class="list-group-item">${v}</li>`).join('') : ''}
+                        </ul>
+                    </div>
+                </div>`)
+                break
+            case 'LUNAR_DATE':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
+                            ${value != '' ? value.split(mulValDel).map(v => `<li class="list-group-item">${DateLib.lDateToDate(v)} ~ ${v} âm lịch</li>`).join('') : ''}
+                        </ul>
+                    </div>
+                </div>`)
+                break
+            case 'PERSON':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có người nào cả!</h6></li>' : ''}
+                        </ul>
+                    </div>
+                </div>`)
+
+                value.split(mulValDel).forEach(id => {
+                    if (id == '') return
+
+                    let $person = $(`<li class="list-group-item p-ref-wrap" style="cursor: pointer;">
+                        <div class="person" style="display: flex; align-items: center;">
+                            <img src="" class="my-img person-reference-image" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
+                            <div class="name p-ref-name" style="display: none;"></div>
+                            <div class="loading">Đang tải...</div>
+                        </div>
+                    </li>`)
+
+                    $element.find('.card .list-group').append($person)
+
+                    api.getPBsInf({id}).then(person => {
+                        $person.find('.loading').remove()
+                        $person.find('img').attr('src', person.avatar || defAvtUrl).show()
+                        $person.find('.name').html(person.callname).show()
+    
+                        $person.click(() => puViewP(person, pTypeAddonInf.udCbIdx, pTypeAddonInf.zIndex))
+                            .on('mouseenter', function () { $(this).css('background-color', '#f7f7f9') })
+                            .on('mouseleave', function () { $(this).css('background-color', 'white') })
+
+                        $person[0].udCb = (newPerson) => {
+                            if (newPerson.id != id) return
+                            Object.assign(person, newPerson)
+    
+                            $element.find('.person-reference-img').attr('src', newPerson.avatar || defAvtUrl)
+                            $element.find('.p-ref-name').html(newPerson.callname)
+                        }
+                    })
+                })
+                break
+            case 'IMAGE':
+                $element = $(`<div style="padding: 0.7rem; width: 100%;">
+                    <div class="card" style="width: 100%;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có ảnh nào cả!</h6></li>' : ''}
+                        </ul>
+                    </div>
+                </div>`)
+
+                if (value != '') {
+                    let $imgs = $(`<li class="list-group-item">
+                        <div class="images row" style="margin: 0 -0.5rem;"></div>
+                    </li>`)
+                    value.split(mulValDel).forEach(src => {
+                        let $imgWrap = $(`<div style="padding: 0.5rem; width: max-content;">
+                            <img src="${src}" style="max-height: 5rem; max-width: 10rem; object-fit: cover; cursor: pointer; border-radius: 0.375rem; border: 1px solid var(--cui-input-border-color, #b1b7c1); cursor: pointer;">
+                        </div>`)
+                        
+                        $imgWrap.find('img').click(function () { viewImage(this.src) })
+
+                        $imgs.find('.images').append($imgWrap)
+                    })
+
+                    $element.find('.card > ul').append($imgs)
+                }
+                break
+        }
+    }
+    else {
+        switch (type) {
+            case 'STRING':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            ${value == '' ?
+                                '<h6 class="text-muted">Không có giá trị!</h6>' : 
+                                `<p class="card-text">${value}</p>`
+                            }
+                        </div>
+                    </div>
+                </div>`)
+                break
+            case 'DATE':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            ${value == '' ?
+                                '<h6 class="text-muted">Không có giá trị!</h6>' : 
+                                `<p class="card-text">${value}</p>`
+                            }
+                        </div>
+                    </div>
+                </div>`)
+                break
+            case 'LUNAR_DATE':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            ${value == '' ?
+                                '<h6 class="text-muted">Không có giá trị!</h6>' : 
+                                `<p class="card-text">${DateLib.lDateToDate(value)}</p><h6 class="card-subtitle mb-2 text-muted">${value} âm lịch</h6>`
+                            }
+                        </div>
+                    </div>
+                </div>`)
+                break
+            case 'PERSON':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
+                            ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có người nào cả!</h6></li>' : ''}
+                            ${value != '' ? `<li class="list-group-item person-wrap p-ref-wrap" style="cursor: pointer;">
+                                <div class="person" style="display: flex; align-items: center;">
+                                    <img src="" class="my-img person-reference-img" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
+                                    <div class="name p-ref-name" style="display: none;"></div>
+                                    <div class="loading">Đang tải...</div>
+                                </div>
+                            </li>` : ''}
+                        </ul>
+                    </div>
+                </div>`)
+
+                if (value != '') {
+                    let $person = $element.find('.card .person-wrap')
+
+                    api.getPBsInf({id: value}).then(person => {
+                        $person.find('.loading').remove()
+                        $person.find('img').attr('src', person.avatar || defAvtUrl).show()
+                        $person.find('.name').html(person.callname).show()
+    
+                        $person.click(() => puViewP(person, pTypeAddonInf.udCbIdx, pTypeAddonInf.zIndex))
+                            .on('mouseenter', function () { $(this).css('background-color', '#f7f7f9') })
+                            .on('mouseleave', function () { $(this).css('background-color', 'white') })
+
+                        $person[0].udCb = (newPerson) => {
+                            if (newPerson.id != id) return
+                            Object.assign(person, newPerson)
+        
+                            $element.find('.person-reference-img').attr('src', newPerson.avatar || defAvtUrl)
+                            $element.find('.p-ref-name').html(newPerson.callname)
+                        }
+                    })
+                }
+                break
+            case 'IMAGE':
+                $element = $(`<div style="padding: 0.7rem; width: max-content;">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">${name}</h5>
+                            ${value == '' ? `<h6 class="card-subtitle mb-2 text-muted">Không có ảnh</h6>` : ''}
+                        </div>
+                        ${value != '' ? `<img class="card-img-bottom" src="${value}" style="cursor: pointer; max-width: 100%; max-height: 10rem; object-fit: cover;">` : ''}
+                    </div>
+                </div>`)
+                $element.find('img').click(function () { viewImage(this.src) })
+                break
+        }
+    }
+
+    return $element
 }
 
 function load(user) {
-    function tabPeopleManager() {
-        $('#tab-people-manager').html(`
+    function tPPMng() {
+        $('#t-people-mng').html(`
             <button type="button" class="btn btn-primary" style="margin-bottom: 12px;" id="add-person">
                 <svg class="icon">
                 <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-user-plus"></use>
@@ -567,24 +1663,24 @@ function load(user) {
             </table>
 
             <style>
-                #tab-people-manager table thead tr th {
+                #t-people-mng table thead tr th {
                 background-color: darkgray;
                 }
-                #tab-people-manager table tbody {
+                #t-people-mng table tbody {
                 background-color: white;
                 }
             </style>
         `)
 
-        function refreshPeopleList() {
-            api.getPeopleOfUserBaseInfo().then(people => {
+        function rfPPList() {
+            api.getPPBsInf().then(people => {
                 $("#list-people").html('')
                 people.forEach(person => {
                     let {callname, gender, birthday, deathday, father, mother, avatar, spouse} = person
                     let $person = $(`<tr class="align-middle" style="cursor: pointer;">
                         <td class="text-center">
                             <div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${avatar || defaultAvatarUrl}">
+                                <img class="avatar-img my-img" src="${avatar || defAvtUrl}">
                             </div>
                         </td>
                         <td>
@@ -601,17 +1697,17 @@ function load(user) {
                         </td>
                         <td class="text-center">
                             ${spouse ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${spouse.avatar || defaultAvatarUrl}">
+                                <img class="avatar-img my-img" src="${spouse.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                         <td class="text-center">
                             ${father ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${father.avatar || defaultAvatarUrl}">
+                                <img class="avatar-img my-img" src="${father.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                         <td class="text-center">
                             ${mother ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${mother.avatar || defaultAvatarUrl}">
+                                <img class="avatar-img my-img" src="${mother.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                     </tr>`)
@@ -622,24 +1718,1107 @@ function load(user) {
                     .on('mouseenter', function () { $(this).css('background-color', '#f7f7f9') })
                     .on('mouseleave', function () { $(this).css('background-color', 'white') })
                     .click(() => {
-                        $(document.body).addClass('stop-scrolling')
-                        updateCallbackStack[0] = refreshPeopleList
-                        popUpViewPerson(person, 0, popUpViewPersonBaseZIndex, true)
+                        $(document.body).addClass('stScroll')
+                        udCbStack[0] = rfPPList
+                        puViewP(person, 0, pUViewPBsIdx, true)
                     })
                 })
             })
         }
     
-        refreshPeopleList()
+        rfPPList()
     
         $('#add-person').click(() => {
-            $(document.body).addClass('stop-scrolling')
-            popUpAddPerson(function addSuccessCallback () {
-                refreshPeopleList()
+            $(document.body).addClass('stScroll')
+            puAddP(function addScCb () {
+                rfPPList()
             })
         })
     }
-    tabPeopleManager()
+    tPPMng() 
 
-    $('#tab-people-manager')[0].load = tabPeopleManager
+    function tFTree() {
+        let config = {
+            show: {
+                image: true,
+                name: true,
+                gender: true,
+                birthday: true,
+                deathday: true
+            },
+            layout: {
+                default: false,
+                minWidth: true
+            },
+            targetPeople: {
+                default: false,
+                showWifes: false,
+                hasRelMainBranch: true,
+                hasRelShip: false
+            },
+            tgPId: null,
+            fcPerId: null,
+            props: {
+                default: {
+                    height: 180,
+                    width: 360
+                },
+                minWidth: {
+                    height: 600,
+                    width: 300
+                },
+                hDis: 80,
+                vDis: 120
+            }
+        }
+
+        let bakAncestor = null
+
+        function createTree() {
+            let $tab = $('#t-fmTree')
+                .append('<div style="height: 100%; width: 100%; position: relative; overflow: hidden;"></div>').find('div')
+                .append('<div style="transform-origin: 0px 0px; left: 0; top: 0; position: absolute;"></div>').find('div')
+
+            let props = config.props[config.layout.minWidth ? 'minWidth' : 'default']
+            props.hDis = config.props.hDis
+            props.vDis = config.props.vDis
+
+            let $tgPerCard = null
+            let $fPCard = null
+            function genPCard(person) {
+                let {id, callname, gender, birthday, deathday, father, mother, spouse, avatar, isStandForUser} = person
+
+                let $card = $(`<div class="card" style="height: ${props.height}px; width: ${props.width}px; position: relative;">
+                    <div class="row g-0" style="height: 100%;">
+                        ${config.show.image ? `<div class="col-${config.layout.minWidth ? 12 : 4}" style="height: ${config.layout.minWidth ? 50 : 100}%;">
+                            <img src="${avatar || defAvtUrl}" class="img-fluid rounded-start" style="object-fit: cover; height: 100%; width: 100%;">
+                        </div>` : ''}
+
+                        ${(config.show.name || config.show.gender || config.show.birthday || config.show.deathday) ? `<div class="col-${config.layout.minWidth ? 12 : 8}">
+                            <div class="card-body">
+                                ${config.show.name ? `<h5 class="card-title">${callname}</h5>` : ''}
+                                ${config.show.gender ? `<p class="card-text">${gender}</p>` : ''}
+                                ${config.show.birthday ? `<p class="card-text"><small class="text-body-secondary">Ngày sinh: ${birthday || 'Không rõ'}</small></p>` : ''}
+                                ${config.show.deathday ? `<p class="card-text"><small class="text-body-secondary">Ngày mất: ${deathday || 'Không rõ'}</small></p>` : ''}
+                            </div>
+                        </div>` : ''}
+                    </div>
+
+                    ${father ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-father" style="z-index: 3; position: absolute; left: 0; bottom: calc(100% + 8px);">Thêm bố</button>`}
+                    ${mother ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-mother" style="z-index: 3; position: absolute; right: 0; bottom: calc(100% + 8px);">Thêm mẹ</button>`}
+                    ${spouse ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-spouse" style="z-index: 3; position: absolute; right: 0; top: calc(100% + 8px);">Thêm vợ/chồng</button>`}
+                    <button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-child" style="z-index: 3; position: absolute; left: 0; top: calc(100% + 8px);">Thêm con</button>
+
+                    <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; bottom: 100%;"></div>
+                    <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; top: 100%;"></div>
+                </div>`)
+
+                if (id == config.tgPId) $tgPerCard = $card
+                if (id == config.fcPerId) $fPCard = $card
+
+                $card.click(() => {
+                    if (!isClickEvent()) return
+                    udCbStack[0] = () => {
+                        $('#t-fmTree').html('')
+                        config.fcPerId = id
+                        createTree()
+                    }
+                    puViewP({id, callname, gender, birthday, deathday, avatar}, 0, pUViewPBsIdx, true)
+                })
+
+                $card.find('.hoverShow').hide()
+                $card.mouseover(() => $card.find('.hoverShow').show())
+                $card.mouseleave(() => $card.find('.hoverShow').hide())
+
+                let tempHtml = `
+                    <h3>Bạn muốn thêm <span style="color: #2eb85c;">ROLE</span> cho <span style="color: #2eb85c;">${callname}</span> bằng cách nào?</h3>
+                    <div style="margin-top: 40px;" id="from-list"><button type="button" class="btn btn-primary">Chọn từ danh sách</button></div>
+                    <div style="margin-top: 20px;" id="create-new"><button type="button" class="btn btn-primary">Tạo một người mới</button></div>
+                `
+
+                $card.find('button.add-father').click((e) => {
+                    e.stopPropagation()
+                    
+                    bigPopUp(tempHtml.replace('ROLE', 'bố'), {
+                        script: ($popUp) => {
+                            $popUp.find('#from-list').click(() => {
+                                puPickP(([person]) => {
+                                    if (!person) return
+                                    $popUp.remove()
+                                    let rmLding = popUpLoading()
+
+                                    api.udFiledVals({
+                                        data: [{
+                                            value: person.id,
+                                            personId: id,
+                                            fieldDefinitionCode: 'father'
+                                        }]
+                                    }).then(() => {
+                                        rmLding()
+                                        $('#t-fmTree').html('')
+                                        config.fcPerId = id
+                                        createTree()
+                                    })
+                                }, {
+                                    maleOnly: true,
+                                    exceptIds: [id]
+                                })
+                            })
+
+                            $popUp.find('#create-new').click(() => {
+                                puAddP(() => {
+                                    $popUp.remove()
+                                    $('#t-fmTree').html('')
+                                    config.fcPerId = id
+                                    createTree()
+                                }, {
+                                    gender: 'Nam',
+                                    target: id,
+                                    asRole: 'father'
+                                })
+                            })
+                        },
+                        style: {
+                            height: '600px',
+                            width: '400px'
+                        }
+                    })
+                })
+
+                $card.find('button.add-mother').click((e) => {
+                    e.stopPropagation()
+                    
+                    bigPopUp(tempHtml.replace('ROLE', 'mẹ'), {
+                        script: ($popUp) => {
+                            $popUp.find('#from-list').click(() => {
+                                puPickP(([person]) => {
+                                    if (!person) return
+                                    $popUp.remove()
+                                    let rmLding = popUpLoading()
+
+                                    api.udFiledVals({
+                                        data: [{
+                                            value: person.id,
+                                            personId: id,
+                                            fieldDefinitionCode: 'mother'
+                                        }]
+                                    }).then(() => {
+                                        rmLding()
+                                        $('#t-fmTree').html('')
+                                        config.fcPerId = id
+                                        createTree()
+                                    })
+                                }, {
+                                    femaleOnly: true,
+                                    exceptIds: [id]
+                                })
+                            })
+
+                            $popUp.find('#create-new').click(() => {
+                                puAddP(() => {
+                                    $popUp.remove()
+                                    $('#t-fmTree').html('')
+                                    config.fcPerId = id
+                                    createTree()
+                                }, {
+                                    gender: 'Nữ',
+                                    target: id,
+                                    asRole: 'mother'
+                                })
+                            })
+                        },
+                        style: {
+                            height: '600px',
+                            width: '400px'
+                        }
+                    })
+                })
+
+                $card.find('button.add-spouse').click((e) => {
+                    e.stopPropagation()
+                    
+                    bigPopUp(tempHtml.replace('ROLE', 'mẹ'), {
+                        script: ($popUp) => {
+                            $popUp.find('#from-list').click(() => {
+                                puPickP(([person]) => {
+                                    if (!person) return
+                                    $popUp.remove()
+                                    let rmLding = popUpLoading()
+
+                                    api.udFiledVals({
+                                        data: [{
+                                            value: person.id,
+                                            personId: id,
+                                            fieldDefinitionCode: 'spouse'
+                                        }]
+                                    }).then(() => {
+                                        rmLding()
+                                        $('#t-fmTree').html('')
+                                        config.fcPerId = id
+                                        createTree()
+                                    })
+                                }, {
+                                    exceptIds: [id]
+                                })
+                            })
+
+                            $popUp.find('#create-new').click(() => {
+                                puAddP(() => {
+                                    $popUp.remove()
+                                    $('#t-fmTree').html('')
+                                    config.fcPerId = id
+                                    createTree()
+                                }, {
+                                    target: id,
+                                    asRole: 'spouse'
+                                })
+                            })
+                        },
+                        style: {
+                            height: '600px',
+                            width: '400px'
+                        }
+                    })
+                })
+
+                $card.find('button.add-child').click((e) => {
+                    e.stopPropagation()
+                    
+                    bigPopUp(tempHtml.replace('ROLE', 'con'), {
+                        script: ($popUp) => {
+                            $popUp.find('#from-list').click(() => {
+                                puPickP(([person]) => {
+                                    if (!person) return
+                                    $popUp.remove()
+                                    let rmLding = popUpLoading()
+
+                                    api.udFiledVals({
+                                        data: [{
+                                            value: id,
+                                            personId: person.id,
+                                            fieldDefinitionCode: (gender == 'Nam') ? 'father' : 'mother'
+                                        }]
+                                    }).then(() => {
+                                        rmLding()
+                                        $('#t-fmTree').html('')
+                                        config.fcPerId = id
+                                        createTree()
+                                    })
+                                }, {
+                                    exceptIds: [id]
+                                })
+                            })
+
+                            $popUp.find('#create-new').click(() => {
+                                puAddP(() => {
+                                    $popUp.remove()
+                                    $('#t-fmTree').html('')
+                                    config.fcPerId = id
+                                    createTree()
+                                }, {
+                                    target: id,
+                                    asRole: 'child',
+                                    targetGender: gender
+                                })
+                            })
+                        },
+                        style: {
+                            height: '600px',
+                            width: '400px'
+                        }
+                    })
+                })
+
+                return $card
+            }
+
+            let drwLineCbs = []
+            function genFGroup(person) {
+                let id1 = randomId()
+                let id2 = randomId()
+                let id3 = randomId()
+                let id4 = randomId()
+
+                let $group = $(`<div class="">
+                    <div class="parent" id="${id1}"></div>
+                    <div class="children" id="${id2}"></div>
+                </div>`)
+                .css({
+                    padding: (props.hDis/2) + 'px',
+                    width: 'max-content',
+                    position: 'relative'
+                })
+                $group.find('#'+id1).css({
+                    display: 'flex',
+                    'justify-content': 'center'
+                })
+                $group.find('#'+id2).css({
+                    display: 'flex',
+                    width: 'max-content',
+                    'margin-top': (props.vDis - props.hDis/2) + 'px'
+                })
+
+                let $card = genPCard(person).attr('id', id3)
+                $group.find('#'+id1).append($card)
+
+                let allChildren = person.children || []
+                let chrCardId = []
+                let chdrNotHasPartner = allChildren.filter(({partner}) => !partner)
+                let chrNotHaPCardId = []
+                let chrHasPrtSameSpouse = allChildren.filter(({partner}) => partner && partner.id == person.spouse?.id)
+                let chrHasParSameSpouseCardId = []
+                let cPnDiffSp = allChildren.filter(({partner}) => partner && partner.id != person.spouse?.id)
+                let gChrHasPnDiffSrc = {}
+                cPnDiffSp.forEach(({partner, child}) => {
+                    let id = partner.id
+                    if (gChrHasPnDiffSrc[id]) {
+                        gChrHasPnDiffSrc[id].children.push(child)
+                    } else {
+                        gChrHasPnDiffSrc[id] = {
+                            children: [child],
+                            partner
+                        }
+                    }
+                })
+                let idsPartDiffSpouse = Object.keys(gChrHasPnDiffSrc)
+                let prtToCardId = {}
+                let prtIdToCCardId = {}
+                idsPartDiffSpouse.forEach(id => prtIdToCCardId[id] = [])
+
+                chdrNotHasPartner.forEach(({child}) => {
+                    let $childCard = genFGroup(child)
+                    let rdId = randomId()
+                    chrNotHaPCardId.push(rdId)
+                    chrCardId.push(rdId)
+                    $group.find('#'+id2).append($childCard.attr('id', rdId))
+                })
+
+                chrHasPrtSameSpouse.forEach(({child}) => {
+                    let $childCard = genFGroup(child)
+                    let rdId = randomId()
+                    chrHasParSameSpouseCardId.push(rdId)
+                    chrCardId.push(rdId)
+                    $group.find('#'+id2).append($childCard.attr('id', rdId))
+                })
+
+                for(let partnerId of idsPartDiffSpouse) {
+                    gChrHasPnDiffSrc[partnerId].children.forEach(child => {
+                        let $childCard = genFGroup(child)
+                        let rdId = randomId()
+                        prtIdToCCardId[partnerId].push(rdId)
+                        chrCardId.push(rdId)
+                        $group.find('#'+id2).append($childCard.attr('id', rdId))
+                    })
+                }
+
+                let drawPartner = (config.targetPeople.showWifes && person.gender == 'Nam') || config.targetPeople.hasRelMainBranch
+                if (drawPartner) {
+                    if (person.spouse) {
+                        $group.find('#'+id1).append(`<div style="width: ${props.hDis}px;"></div>`)
+                        let $spouseCard = genPCard(person.spouse)
+                        $group.find('#'+id1).append($spouseCard.attr('id', id4))
+                    }
+
+                    idsPartDiffSpouse.forEach(id => {
+                        $group.find('#'+id1).append(`<div style="width: ${props.hDis}px;"></div>`)
+                        let $partnerCard = genPCard(gChrHasPnDiffSrc[id].partner)
+                        let rdId = randomId()
+                        prtToCardId[id] = rdId
+                        $group.find('#'+id1).append($partnerCard.attr('id', rdId))
+                    })
+                }
+
+                if ((drawPartner && person.spouse) || allChildren.length != 0) {
+                    function drawLine(x1, y1, x2, y2, padding1 = false, padding2 = false) {
+                        let lineWidth = 8
+                        let lineHeight = Math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+                        if (padding1) {
+                            
+                            lineHeight += lineWidth/2
+                            let [a, b] = [x1 - x2, y1 - y2]
+                            x1 += (lineWidth/2)*a/(a**2 + b**2)
+                            y1 += (lineWidth/2)*b/(a**2 + b**2)
+                        }
+                        if (padding2) {
+                            
+                            lineHeight += lineWidth/2
+                            let [a, b] = [x2 - x1, y2 - y1]
+                            x2 += (lineWidth/2)*a/(a**2 + b**2)
+                            y2 += (lineWidth/2)*b/(a**2 + b**2)
+                        }
+            
+                        let line = $('<div></div>').css({
+                            height: lineWidth+'px',
+                            width: lineHeight+'px',
+                            position: 'absolute',
+                            left: ((x1+x2)/2 - lineHeight/2)+'px',
+                            top: ((y1+y2)/2 - lineWidth/2)+'px',
+                            transform: `rotate(${Math.atan((y2-y1)/(x2-x1))*180/Math.PI}deg)`,
+                            'background-color': 'green',
+                        })
+
+                        $group.append(line)
+                    }
+
+                    drwLineCbs.push(function draw() {
+                        let $person = $group.find('#'+id3)
+                        let pPos = $person.position()
+                        let pHeight = $person.outerHeight()
+                        let pWidth = $person.outerWidth()
+
+                        let horiLineY = null
+
+                        function getCCardStyle(childCardId) {
+                            let $childCard = $group.find(`#${childCardId}`)
+                            let temp = $childCard.position()
+                            let top1 = temp.top, left1 = temp.left
+
+                            let $cCardFPar = $group.find(`#${childCardId} > .parent > div:first-child`)
+                            temp = $cCardFPar.position()
+                            let top2 = temp.top, left2 = temp.left
+                            
+                            return {
+                                top: top1 + top2,
+                                left: left1 + left2,
+                                height: $cCardFPar.outerHeight(),
+                                width: $cCardFPar.outerWidth()
+                            }
+                        }
+
+                        if (chrCardId.length != 0) {
+                            horiLineY = ((pPos.top + pHeight) + getCCardStyle(chrCardId[0]).top)/2
+                        }
+
+                        function drawConnLines(cardIds, x, y, reduceY = 0) {
+                            if (cardIds.length == 0) return
+
+                            let cardIdToInf = {}
+                            cardIds.forEach(cardId => {
+                                cardIdToInf[cardId] = getCCardStyle(cardId)
+                            })
+                            let firstCardId = cardIds[0]
+
+                            if (cardIds.length == 1) {
+                                let x2 = cardIdToInf[firstCardId].left + cardIdToInf[firstCardId].width/2
+                                let y2 = cardIdToInf[firstCardId].top
+                                
+                                if (x == x2) {
+                                    drawLine(x, y, x2, y2)
+                                }
+                                else {
+                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
+                                    drawLine(x2, horiLineY - reduceY, x, horiLineY - reduceY, true, true)
+                                    drawLine(x2, horiLineY - reduceY, x2, y2, true, false)
+                                }
+                            }
+                            else {
+                                let horiLineX1 = cardIdToInf[firstCardId].left + cardIdToInf[firstCardId].width/2
+                                let lastCardId = cardIds[cardIds.length - 1]
+                                let horiLineX2 = cardIdToInf[lastCardId].left + cardIdToInf[lastCardId].width/2
+
+                                if (horiLineX1 <= x && x <= horiLineX2) {
+                                    drawLine(x, y, x, horiLineY, false, true)
+                                } else {
+                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
+                                    drawLine(x, horiLineY - reduceY, (horiLineX1 + horiLineX2)/2, horiLineY - reduceY, true, true)
+                                    drawLine((horiLineX1 + horiLineX2)/2, horiLineY - reduceY, (horiLineX1 + horiLineX2)/2, horiLineY, true, false)
+                                }
+                                drawLine(horiLineX1, horiLineY, horiLineX2, horiLineY, true, true)
+
+                                cardIds.forEach(cardId => {
+                                    let vertLineX = cardIdToInf[cardId].left + cardIdToInf[cardId].width/2
+                                    let vertLineY1 = horiLineY
+                                    let vertLineY2 = cardIdToInf[cardId].top
+
+                                    drawLine(vertLineX, vertLineY1, vertLineX, vertLineY2, true, false)
+                                })
+                            }
+                        }
+
+                        
+                        if (!drawPartner) {
+                            drawConnLines(chrCardId, pPos.left + pWidth/2, pPos.top + pHeight)
+                            return
+                        }
+
+                        
+
+                        
+                        if (chrNotHaPCardId.length != 0) {
+                            drawConnLines(chrNotHaPCardId, pPos.left + pWidth/2, pPos.top + pHeight)
+                        }
+                        
+                        
+                        if (person.spouse) {
+                            let $spouseCard = $group.find('#'+id4)
+                            let x1 = pPos.left + pWidth
+                            let x2 = $spouseCard.position().left
+                            let y = pPos.top + pHeight/2
+                            drawLine(x1, y, x2, y)
+
+                            let delta
+                            if (chrNotHaPCardId.length == 0) {
+                                delta = 0
+                            } else {
+                                delta = (idsPartDiffSpouse.length == 0) ? config.props.vDis/4 : config.props.vDis/6
+                            }
+                            drawConnLines(chrHasParSameSpouseCardId, (x1 + x2)/2, y, delta)
+                        }
+
+                        
+                        let nPartnersDiffSpouse = idsPartDiffSpouse.length
+                        idsPartDiffSpouse.forEach((partnerId, index) => {
+                            let $partnerCard = $group.find('#'+prtToCardId[partnerId])
+                            let partnerPos = $partnerCard.position()
+                            let partnerWidth = $partnerCard.outerWidth()
+
+                            let x1 = pPos.left + pWidth/2
+                            let x2 = partnerPos.left + partnerWidth/2
+                            let y = pPos.top - ((index + 1)/(nPartnersDiffSpouse + 1))*(horiLineY - pPos.top - pHeight)
+                            drawLine(x1, y, x2, y, true, true)
+
+                            drawLine(x1, y, x1, pPos.top, true, false)
+                            drawLine(x2, y, x2, pPos.top, true, false)
+
+                            let delta
+                            if (chrNotHaPCardId.length == 0) {
+                                delta = (chrHasParSameSpouseCardId.length == 0) ? 0 : config.props.vDis/4
+                            } else {
+                                delta = (chrHasParSameSpouseCardId.length == 0) ? config.props.vDis/4 : config.props.vDis/3
+                            }
+                            drawConnLines(prtIdToCCardId[partnerId], x2 - partnerWidth/2 - config.props.hDis/2, y, delta)
+                        })
+                    })
+                }
+
+                return $group
+            }
+
+            
+            let [moveToCard, isClickEvent] = (() => {
+                let scale = 1,
+                panning = false,
+                pointX = 0,
+                pointY = 0,
+                start = { x: 0, y: 0 },
+                zoom = $tab[0]
+                let maxScale = 2
+                let minScale = 0.01
+            
+                function setTransform() {
+                    $tab.css('transform', `translate(${pointX}px, ${pointY}px) scale(${scale})`)
+                }
+
+                let xBfMouDown, yBfMouDown
+                let xMouUp, yMouUp
+            
+                zoom.onmousedown = function (e) {
+                    e.preventDefault()
+                    xBfMouDown = pointX
+                    yBfMouDown = pointY
+                    start = {
+                        x: e.clientX - pointX,
+                        y: e.clientY - pointY
+                    }
+                    panning = true
+                }
+            
+                zoom.onmouseup = function (e) {
+                    panning = false
+                    xMouUp = pointX
+                    yMouUp = pointY
+                }
+            
+                zoom.onmousemove = function (e) {
+                    e.preventDefault()
+                    if (!panning) {
+                        return
+                    }
+                    pointX = (e.clientX - start.x)
+                    pointY = (e.clientY - start.y)
+                    setTransform()
+                }
+
+                zoom.onwheel = function (e) {
+                    e.preventDefault()
+                    let  xs = (e.clientX - pointX) / scale
+                    let ys = (e.clientY - pointY) / scale
+                    let delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY)
+                    scale *= (delta > 0) ? 1.1 : (1/1.1)
+                    scale = Math.min(Math.max(scale, minScale), maxScale)
+                    pointX = e.clientX - xs * scale
+                    pointY = e.clientY - ys * scale
+            
+                    setTransform()
+                }
+
+                let moveToCard = ($card, duration = 0, end) => {
+                    if (!$card) return
+
+                    let height = $card.outerHeight()
+                    let width = $card.outerWidth()
+                    let documentHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+                    let documentWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+                    let mainPaddLeft = parseInt($('#main').css('padding-left').replace('px', ''))
+                    if (isNaN(mainPaddLeft)) mainPaddLeft = 256
+                    
+                    let targetOffset = {
+                        top: $('#header').outerHeight() + (documentHeight - $('#header').outerHeight())/2 - height/2,
+                        left: mainPaddLeft + (documentWidth - mainPaddLeft)/2 - width/2
+                    }
+
+                    let realOffset = $card.offset()
+
+                    if (duration <= 0) {
+                        pointX = targetOffset.left - realOffset.left
+                        pointY = targetOffset.top - realOffset.top
+                        setTransform()
+                        if (end) end()
+                        return
+                    }
+
+                    $tab.animate({
+                        left: `+=${targetOffset.left - realOffset.left - pointX}px`,
+                        top: `+=${targetOffset.top - realOffset.top - pointY}px`
+                    }, duration, () => {
+                        pointX = targetOffset.left - realOffset.left
+                        pointY = targetOffset.top - realOffset.top
+                        setTransform()
+                        $tab.css({
+                            left: 0,
+                            top: 0
+                        })
+                    })
+                }
+
+                let isClickEvent = () => {
+                    let delta = 1
+                    return Math.abs(xMouUp - xBfMouDown) < delta && Math.abs(yMouUp - yBfMouDown) < delta
+                }
+
+                return [moveToCard, isClickEvent]
+            })()
+
+            if (bakAncestor) {
+                drawTree({
+                    ancestor: bakAncestor,
+                    tgPId: config.tgPId
+                })
+            } else {
+                let level = 1
+                if (config.targetPeople.showWifes) level = 2
+                else if (config.targetPeople.hasRelMainBranch) level = 3
+                api.drawFTree({tgPId: config.tgPId, level}).then(drawTree)
+            }
+
+            function drawTree({ancestor, tgPId}) {
+                config.tgPId = tgPId
+                bakAncestor = null
+                let $tree = genFGroup(ancestor)
+                $tree.css({
+                    position: 'fixed',
+                    top: '200%'
+                })
+                $tab.append($tree)
+                setTimeout(() => drwLineCbs.forEach(f => f()), 100)
+                setTimeout(() => {
+                    $tree.css({
+                        position: 'unset',
+                        top: 'unset'
+                    })
+                    moveToCard($fPCard || $tgPerCard)
+                }, 200)
+
+                function genOpHtml(type) {
+                    return `<div style="height: 3rem; width: 3rem; padding: 0.6rem; margin-left: 0.5rem; border-radius: 0.5rem; background-color: white; border: 1px solid rgba(0, 0, 21, 0.175); cursor: pointer;">
+                        <svg class="nav-icon" style="width: 100%; height: 100%;">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-${type}"></use>
+                        </svg>
+                    </div>`
+                }
+
+                $tab.parent().append(
+                    $('<div style="position: fixed; bottom: 1rem; right: 1rem; display: flex;"></div>').append(
+                        $(genOpHtml('zoom-in')).click(() => {
+                            
+                        }).hide(),
+                        $(genOpHtml('location-pin')).click(() => {
+                            
+                        }).hide(),
+                        $(genOpHtml('settings')).click(() => {
+                            let html = `
+                                <label class="form-label" style="margin-top: 1.5rem;">Thông tin hiển thị trên biểu đồ</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="show-name" ${config.show.name ? 'checked' : ''} disabled>
+                                    <label class="form-check-label" for="show-name">
+                                        Tên gọi
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="show-image" ${config.show.image ? 'checked' : ''}>
+                                    <label class="form-check-label" for="show-image">
+                                        Ảnh
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="show-gender" ${config.show.gender ? 'checked' : ''}>
+                                    <label class="form-check-label" for="show-gender">
+                                        Giới tính
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="show-bday" ${config.show.birthday ? 'checked' : ''}>
+                                    <label class="form-check-label" for="show-bday">
+                                        Ngày sinh
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="show-dday" ${config.show.deathday ? 'checked' : ''}>
+                                    <label class="form-check-label" for="show-dday">
+                                        Ngày mất
+                                    </label>
+                                </div>
+
+                                <label class="form-label" style="margin-top: 1.5rem;">Bố cục biểu đồ</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="layout" id="layout-default" ${config.layout.default ? 'checked' : ''}>
+                                    <label class="form-check-label" for="layout-default">
+                                        Tối ưu chiều cao
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="layout" id="layout-minWidth" ${config.layout.minWidth ? 'checked' : ''}>
+                                    <label class="form-check-label" for="layout-minWidth">
+                                        Tối ưu chiều rộng
+                                    </label>
+                                </div>
+
+                                <label class="form-label" style="margin-top: 1.5rem;">Kiểu biểu đồ gia phả</label>
+                                <select class="form-select" name="targetPeople">
+                                    <option value="default" ${config.targetPeople.default ? 'selected' : ''}>Mức 1: Không vẽ vợ của các nam trong dòng họ</option>
+                                    <option value="showWifes" ${config.targetPeople.showWifes ? 'selected' : ''}>Mức 2: Vẽ vợ của các nam trong dòng họ</option>
+                                    <option value="hasRelMainBranch" ${config.targetPeople.hasRelMainBranch ? 'selected' : ''}>Mức 3: Vẽ bất cứ ai có quan hệ (vẽ cả chồng và con cái của các nữ trong dòng họ)</option>
+                                </select>
+
+                                <label class="form-label" style="margin-top: 1.5rem;">Khoảng cách theo chiều ngang</label>
+                                <select class="form-select" name="hDis"></select>
+
+                                <label class="form-label" style="margin-top: 1.5rem;">Khoảng cách theo chiều dọc</label>
+                                <select class="form-select" name="vDis"></select>
+                            `
+                            let [$getPInp, _, getPersonId, __] = gen$fInput({
+                                type: 'PERSON',
+                                name: 'Chủ thể biểu đồ gia phả',
+                                isMultiValue: false,
+                                value: tgPId,
+                                code: 'Some values to make sure can not be changed'
+                            })
+                            bigPopUp(html, {
+                                script: $popUp => {
+                                    $popUp.find('.content').prepend($getPInp)
+
+                                    let $selectHDis = $popUp.find('.content select[name="hDis"]')
+                                    for (let i = 1; i <= 8; i++) {
+                                        $selectHDis.append(`<option value="${i*20}" ${config.props.hDis == (i*20) ? 'selected' : ''}>${i*20} px</option>`)
+                                    }
+
+                                    let $selectVDis = $popUp.find('.content select[name="vDis"]')
+                                    for (let i = 1; i <= 8; i++) {
+                                        $selectVDis.append(`<option value="${i*20}" ${config.props.vDis == (i*20) ? 'selected' : ''}>${i*20} px</option>`)
+                                    }
+                                },
+                                hideClBtn: true,
+                                buttons: [
+                                    {
+                                        html: 'Thoát',
+                                        click: $popUp => $popUp.remove()
+                                    },
+                                    {
+                                        html: 'Lưu thay đổi',
+                                        type: 'success',
+                                        click: $popUp => {
+                                            config.show.image = $popUp.find('input#show-image')[0].checked
+                                            config.show.gender = $popUp.find('input#show-gender')[0].checked
+                                            config.show.birthday = $popUp.find('input#show-bday')[0].checked
+                                            config.show.deathday = $popUp.find('input#show-dday')[0].checked
+
+                                            config.layout.default = $popUp.find('input#layout-default')[0].checked
+                                            config.layout.minWidth = $popUp.find('input#layout-minWidth')[0].checked
+                                            if (config.layout.default && config.layout.minWidth) config.layout.minWidth = false
+
+                                            let targetPeople = $popUp.find('select[name="targetPeople"]').val()
+                                            let oldTgP = Object.keys(config.targetPeople).find(key => config.targetPeople[key])
+                                            let tgPPValid = false
+                                            for (let key in config.targetPeople) {
+                                                if (key == targetPeople) {
+                                                    tgPPValid = true
+                                                    config.targetPeople[key] = true
+                                                } else {
+                                                    config.targetPeople[key] = false
+                                                }
+                                            }
+                                            if (!tgPPValid) config.targetPeople.default = true
+                                            let nTgP = Object.keys(config.targetPeople).find(key => config.targetPeople[key])
+
+                                            let hDis = Number($popUp.find('select[name="hDis"]').val())
+                                            if (isNaN(hDis) || Math.round(hDis) != hDis
+                                                || hDis < 20 || hDis > 160
+                                                || hDis%20 != 0) {
+                                                    hDis = 80
+                                            }
+                                            config.props.hDis = hDis
+
+                                            let vDis = Number($popUp.find('select[name="vDis"]').val())
+                                            if (isNaN(vDis) || Math.round(vDis) != vDis
+                                                || vDis < 20 || vDis > 160
+                                                || vDis%20 != 0) {
+                                                    vDis = 80
+                                            }
+                                            config.props.vDis = vDis
+
+                                            let tgPIdFromInp = getPersonId().value
+                                            if (!tgPIdFromInp || tgPIdFromInp == '') {
+                                                tgPIdFromInp = tgPId
+                                            }
+
+                                            $('#t-fmTree').html('')
+                                            if (tgPIdFromInp != tgPId || oldTgP != nTgP) {
+                                                config.tgPId = tgPIdFromInp
+                                                config.fcPerId = null
+                                                createTree()
+                                            } else {
+                                                bakAncestor = ancestor
+                                                config.fcPerId = null
+                                                createTree()
+                                            }
+
+                                            $popUp.remove()
+                                        }
+                                    }
+                                ]
+                            })
+                        })
+                    )
+                )
+            }
+        }
+
+        createTree()
+    }
+
+    function tabStatistic() {
+
+    }
+
+    function tUCmEvts() {
+        let $tab = $('#t-uCm-Evts').html('')
+
+        api.getBsInfTgPeopleUCmEvts().then(personInfos => {
+            let events = []
+            let now = new Date()
+            let dnow = now.getDate(), mnow = now.getMonth() + 1, ynow = now.getFullYear()
+            let [ldnow, lmnow, lynow] = DateLib.dateToLDate(`${dnow}/${mnow}/${ynow}`).split('/').map(i => Number(i))
+            let nowDate = new Date(ynow, mnow - 1, dnow)
+            let score = {}
+            function dateTransfer(date, isLunarDate = false) {
+                if (isLunarDate) {
+                    if (!DateLib.isValidLDate(date)) return null
+                    let [ld, lm, ly] = date.split('/').map(i => Number(i))
+                    if (lm < lmnow || (lm == lmnow && ld < ldnow)) ly = lynow + 1
+                    else ly = lynow
+                    date = `${ld}/${lm}/${ly}`
+                    date = DateLib.lDateToDate(date)
+                    let [d, m, y] = date.split('/').map(i => Number(i))
+                    score[date] = y*4000 + m*20 + d
+                    return date
+                } else {
+                    if (!DateLib.isValidDate(date)) return null
+                    let [d, m, y] = date.split('/').map(i => Number(i))
+                    if (m < mnow || (m == mnow && d < dnow)) y = ynow + 1
+                    else y = ynow
+                    date = `${d}/${m}/${y}`
+                    score[date] = y*4000 + m*20 + d
+                    return date
+                }
+            }
+            function deltaDaysNow(date) {
+                let [d, m, y] = date.split('/').map(i => Number(i))
+                return Math.round((new Date(y, m - 1, d).getTime() - nowDate.getTime())/(1000*60*60*24))
+            }
+            personInfos.forEach(person => {
+                if (person.birthday && person.birthday != '') {
+                    events.push({
+                        type: 'birthday',
+                        originalDate: person.birthday,
+                        date: dateTransfer(person.birthday, false),
+                        person
+                    })
+                }
+                if (person.deathday && person.deathday != '') {
+                    events.push({
+                        type: 'deathday',
+                        originalDate: person.deathday,
+                        date: dateTransfer(person.deathday, true),
+                        person
+                    })
+                }
+            })
+            events.sort((e1, e2) => score[e1.date] - score[e2.date])
+
+            let lastDate = null
+            events.forEach(({type, originalDate, date, person}) => {
+                if (date != lastDate) {
+                    let dDays = deltaDaysNow(date)
+                    let dDaysStr = ''
+                    if (dDays == 0) dDaysStr = 'Hôm nay'
+                    else if (dDays == 1) dDaysStr = 'Ngày mai'
+                    else if (dDays == 2) dDaysStr = 'Ngày kia'
+                    else dDaysStr = dDays + ' ngày nữa'
+                    $tab.append(`<h2 style="margin-bottom: 1rem; margin-top: ${!lastDate ? '2rem' : '2rem'};">Ngày ${date} ~ ${DateLib.dateToLDate(date)} âm lịch <span class="badge text-bg-secondary" style="transform: translateY(-0.1rem);">${dDaysStr}</span></h2>`)
+                    lastDate = date
+                }
+
+                $tab.append(`<div style="display: flex; align-items: center; height: 4rem; background-color: white; margin-bottom: 1rem; border-radius: 0.4rem;">
+                    <img class="my-img" style="height: 100%; padding: 0.4rem; margin-right: 0.5rem;" src="${person.avatar || defAvtUrl}">
+                    <div>
+                        ${type == 'birthday' ? 'Sinh nhật' : 'Ngày giỗ'} của <span class="fw-bolder">${person.callname}</span> (ngày ${type == 'birthday' ? 'sinh' : 'mất'}: ${type == 'birthday' ? originalDate : `${originalDate} âm lịch`})
+                    </div>
+                </div>`)
+            })
+
+            $tab.prepend(`<button type="button" class="btn btn-primary" style="margin-bottom: 12px;" id="edit-target">
+                <svg class="icon">
+                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-settings"></use>
+                </svg> Tùy chỉnh đối tượng
+            </button>`)
+
+            $tab.find('#edit-target').click(() => {
+                let pIdsIfChoosed = []
+                bigPopUp('', {
+                    script: $popUp => {
+                        api.getUpCmEvtTgInf().then(({type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specPIds}) => {
+                            let html = `
+                                <h1>Cài đặt đối tượng cho các sự kiện sắp tới</h1>
+                                <input class="form-check-input" type="radio" name="tg-opt" id="target-all" ${type == 0 ? 'checked' : ''}>
+                                <label class="form-check-label" for="target-all">
+                                    Tất cả mọi người
+                                </label>
+                                <br>
+                                <input class="form-check-input" type="radio" name="tg-opt" id="tg-hCont" ${type > 1 ? 'checked' : ''}>
+                                <label class="form-check-label" for="tg-hCont">
+                                    Những người thỏa mãn điều kiện nào đó
+                                </label>
+                                <br>
+                                <input class="form-check-input" type="radio" name="tg-opt" id="spec-target" ${type == 1 ? 'checked' : ''}>
+                                <label class="form-check-label" for="spec-target">
+                                    Chỉ định những người bạn mong muốn
+                                </label>
+                            `
+
+                            $popUp.find('.content').append(html)
+                            $popUp.find('#spec-target').before(`<div style="padding: 0.5rem 2rem;" id="tg-hCont-sp"><div style=" border: 2px solid; padding: 1rem; border-radius: 0.5rem;">
+                                <label class="form-check-label" for="">
+                                    Đối tượng
+                                </label>
+                                <select class="form-select" name="">
+                                    <option value="2" ${type != 3 ? 'selected' : ''}>Những người thuộc biểu đồ gia phả mức 2</option>
+                                    <option value="3" ${type == 3 ? 'selected' : ''}>Những người thuộc biểu đồ gia phả mức 3</option>
+                                </select>
+
+                                <div class="col-12">
+                                    <label for="" class="form-label">Số đời phía trên tôi</label>
+                                    <input type="text" class="form-control" id="tg-hCont-nGen-above" placeholder="Số nguyên không âm" value="${(type > 1) ? numGenerationsAbove : 3}">
+                                    <div class="invalid-feedback" id="tg-hCont-nGen-above-fb"></div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="" class="form-label">Số đời phía dưới tôi</label>
+                                    <input type="text" class="form-control" id="tg-hCont-num-gen-below" placeholder="Số nguyên không âm" value="${(type > 1) ? numGenerationsBelow : 3}">
+                                    <div class="invalid-feedback" id="tg-hCont-nGen-below-fb"></div>
+                                </div>
+
+                                <input class="form-check-input" id="tg-hCont-icl-equal-gen" type="checkbox" ${(type > 1 && !includeEqualGeneration) ? '' : 'checked'}>
+                                <label for="tg-hCont-icl-equal-gen" class="form-label">Đời ngang tôi</label>
+                            </div></div>`)
+
+                            if (type == 1) pIdsIfChoosed = specPIds == '' ? [] : specPIds.split(mulValDel)
+
+                            $popUp.find('.content').append(`<div style="padding: 0.5rem 2rem;" id="spec-tg-sp"><div style=" border: 2px solid; padding: 1rem; border-radius: 0.5rem;">
+                                <span class="count">${type == 1 ? pIdsIfChoosed.length : 0}</span> người đã người được chọn <button class="btn btn-primary">Thay đổi</button>
+                            </div></div>`)
+
+                            if (type == 0 || type == 1) $popUp.find('#tg-hCont-sp').hide()
+                            if (type != 1) $popUp.find('#spec-tg-sp').hide()
+
+                            $popUp.find('#target-all').click(() => {
+                                $popUp.find('#tg-hCont-sp').hide()
+                                $popUp.find('#spec-tg-sp').hide()
+                            })
+                            $popUp.find('#tg-hCont').click(() => {
+                                $popUp.find('#tg-hCont-sp').show()
+                                $popUp.find('#spec-tg-sp').hide()
+                            })
+                            $popUp.find('#spec-target').click(() => {
+                                $popUp.find('#tg-hCont-sp').hide()
+                                $popUp.find('#spec-tg-sp').show()
+                            })
+
+                            $popUp.find('#spec-tg-sp button').click(() => {
+                                puPickP(people => {
+                                    pIdsIfChoosed = people.map(({id}) => id)
+                                    $popUp.find('#spec-tg-sp .count').html(pIdsIfChoosed.length)
+                                }, {
+                                    isMultiValue: true,
+                                    pickedIds: pIdsIfChoosed
+                                })
+                            })
+                        })
+                    },
+                    hideClBtn: true,
+                    buttons: [{
+                        html: 'Thoát',
+                        click: $popUp => $popUp.remove()
+                    }, {
+                        html: 'Lưu lại',
+                        type: 'success',
+                        click: $popUp => {
+                            let data
+                            if ($popUp.find('#tg-hCont')[0].checked) {
+                                let type = $popUp.find('#tg-hCont-sp select')[0].value != 3 ? '2' : '3'
+                                let numGenerationsAbove = $popUp.find('#tg-hCont-nGen-above').val()
+                                numGenerationsAbove = parseInt(numGenerationsAbove)
+                                if (isNaN(numGenerationsAbove) || numGenerationsAbove < 0) {
+                                    $popUp.find('#tg-hCont-nGen-above-fb').html('Phải nhập số nguyên không âm!').show()
+                                    return
+                                }
+                                let numGenerationsBelow = $popUp.find('#tg-hCont-num-gen-below').val()
+                                numGenerationsBelow = parseInt(numGenerationsBelow)
+                                if (isNaN(numGenerationsBelow) || numGenerationsBelow < 0) {
+                                    $popUp.find('#tg-hCont-nGen-below-fb').html('Phải nhập số nguyên không âm!').show()
+                                    return
+                                }
+                                let includeEqualGeneration = $popUp.find('#tg-hCont-icl-equal-gen')[0].checked ? 1 : 0
+                                data = {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specPIds: []}
+                            }
+                            else if ($popUp.find('#spec-target')[0].checked) {
+                                data = {type: 1, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specPIds: pIdsIfChoosed.join(mulValDel)}
+                            }
+                            else {
+                                data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specPIds: []}
+                            }
+                            api.udUpcomingEvtTarInf({uCmEvtTgInf: data}).then(() => {
+                                tUCmEvts()
+                                $popUp.remove()
+                            })
+                        }
+                    }]
+                })
+            })
+        })
+    }
+
+    $('#t-people-mng')[0].load = tPPMng
+    $('#t-fmTree')[0].load = tFTree
+    $('#t-stas')[0].load = tabStatistic
+    $('#t-uCm-Evts')[0].load = tUCmEvts
 }

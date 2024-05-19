@@ -71,19 +71,19 @@
   flex-direction: column;
   justify-content: end;
 }
-.chart .right .main-chart .col .value-explain {
+.chart .right .main-chart .col .vl-exp {
   text-align: center;
 }
-.chart .right .main-chart .col .val-visualize {
+.chart .right .main-chart .col .val-visual {
   background-color: #79E0EE;
 }
-.chart .right .main-chart .col:nth-child(even) .val-visualize {
+.chart .right .main-chart .col:nth-child(even) .val-visual {
   background-color: #67d5e4;
 }
-.chart .right .column-explain {
+.chart .right .colExpl {
   display: flex;
 }
-.chart .right .column-explain .col {
+.chart .right .colExpl .col {
   flex: 1;
   text-align: center;
 }
@@ -91,7 +91,7 @@
   text-align: center;
 }
 
-.stop-scrolling {
+.stScroll {
   height: 100%;
   overflow: hidden;
 }/*# sourceMappingURL=common.css.map */
