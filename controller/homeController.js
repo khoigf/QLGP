@@ -721,13 +721,76 @@ const deleteField = (request, response, next)=>{
         }
     });
 }
+
 const drawFTree = (request, response, next)=>{
     const {targetPersonId, level} = request.body;
-    if (!targetPersonId || !level) {
+    if (!level) {
         response.status(400).json({ message: 'Missing required fields' });
+    }
+    if(!targetPersonId){
+        const sessionId = request.cookies.sessionId;
+        const userId = sessions[sessionId].userId;
+        const query = `SELECT id FROM person WHERE ownerUserId = ${userId} AND isStandForUser = ${1}`;
+        database.query(query, (error, results) => {
+            if(error){
+                response.status(500).json({ message: error.message });
+            }else{
+                targetPersonId=results[0].id
+            }
+        });
     }
 
 };
+
+const getUEPInfo = (request, response, next)=>{
+
+}
+
+const getUpcomingEvents = async (request, response, next)=>{
+    const getUpcomingEvents = async (userId) => {
+        try {
+          // Query để lấy thông tin các sự kiện sắp tới
+          const upcomingEventsResult = await executeQuery(
+            `SELECT * FROM upcomingeventtargetinfo WHERE userId = ${userId}`
+          );
+      
+          return upcomingEventsResult;
+        } catch (error) {
+          console.error("Error fetching upcoming events:", error);
+          throw error;
+        }
+    };
+    const sessionId = request.cookies.sessionId;
+    // const userId=1;
+    const userId = sessions[sessionId].userId;
+    const upcomingEvents = await getUpcomingEvents(userId);
+    if (!userId) {
+        return res.status(400).json({ message: 'Invalid session' });
+    }
+    response.status(200).json(upcomingEvents);
+}
+
+const updateUpcomingEvent = (request, response, next)=>{
+    const sessionId = request.cookies.sessionId;
+    const userId = sessions[sessionId].userId;
+    if (!userId) {
+        return res.status(400).json({ message: 'Invalid session' });
+    }
+    const { type, numGenerationsAbove, numGenerationsBelow, 
+        includeEqualGeneration, specificPersonIds } = req.body;
+    const query = `UPDATE UpcomingEventTargetInfo
+    SET type = ?, numGenerationsAbove = ?, numGenerationsBelow = ?
+    , includeEqualGeneration = ?, specificPersonIds = ?
+    WHERE userId = ?`
+    database.query(query, [type, numGenerationsAbove, numGenerationsBelow, 
+    includeEqualGeneration, specificPersonIds, userId], (error,result)=>{
+        if(error){
+            response.status(500).json({ message: error.message });
+        }else{
+            response.status(200).json({ message: 'OK' });
+        }
+    });
+}
 
 module.exports = {
     postLogin,
@@ -743,4 +806,7 @@ module.exports = {
     updateField,
     deleteField,
     drawFTree,
+    getUEPInfo,
+    getUpcomingEvents,
+    updateUpcomingEvent,
 };
