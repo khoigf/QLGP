@@ -1021,7 +1021,7 @@ const drawFTree = async (request, response, next)=>{
                 let partner = parent.gender == 'Nam' ? (person.mother?.id && idToPer[person.mother.id]) : (person.father?.id && idToPer[person.father.id])
                 parent.children.push({
                     child: person,
-                    partner: partner
+                    partner: JSON.parse(JSON.stringify(partner))
                 })
             }
             return true
