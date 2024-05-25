@@ -721,13 +721,290 @@ const deleteField = (request, response, next)=>{
         }
     });
 }
-const drawFTree = (request, response, next)=>{
-    const {targetPersonId, level} = request.body;
-    if (!targetPersonId || !level) {
-        response.status(400).json({ message: 'Missing required fields' });
-    }
 
+function getPersonBaseInfo(id) {
+    return new Promise((resolve, reject) => {
+        const query1 = `SELECT * FROM person WHERE id = ${id}`;
+        database.query(query1, function (error, result) {
+            if (error) {
+                reject(error.message)
+            } else {
+                const person = result[0];
+                const query2 = `SELECT fieldDefinitionCode,value FROM fieldvalue 
+                        WHERE personId = ? AND fieldDefinitionCode IN (?, ?, ?, ?, ?)`;
+                database.query(query2, [id, 'avatar', 'birthday', 'callname', 'deathday', 'gender'], function (error, result) {
+                    if (error) {
+                        reject(error.message)
+                    } else {
+                        const fields = result.reduce((acc, field) => {
+                            acc[field.fieldDefinitionCode] = field.value;
+                            return acc;
+                        }, {});
+                        const query3 = `SELECT fieldDefinitionCode, value FROM fieldvalue 
+                                WHERE personId = ? AND fieldDefinitionCode IN (?, ?, ?)`;
+                        database.query(query3, [id, 'spouse', 'father', 'mother'], function (error, result) {
+                            if (error) {
+                                reject(error.message)
+                            } else {
+                                const relatedPersons = {};
+                                var check = 0;
+                                for (const relation of result) {
+                                    const relatedId = relation.value;
+                                    const query4 = `SELECT value FROM fieldvalue 
+                                                WHERE personId = ? AND fieldDefinitionCode IN (?, ?)`
+                                    database.query(query4, [relatedId, 'callname', 'avatar'], function (error, result) {
+                                        check++;
+                                        if (error) {
+                                            reject(error.message)
+                                        } else {
+                                            if (result.length > 0) {
+                                                relatedPersons[relation.fieldDefinitionCode] = {
+                                                    id: relatedId,
+                                                    callname: result[0].value,
+                                                    avatar: result[1].value
+                                                };
+                                            } else {
+                                                relatedPersons[relation.fieldDefinitionCode] = null;
+                                            }
+                                        }
+                                        if (check == 3) {
+                                            const ans = {
+                                                ...person,
+                                                ...fields,
+                                                spouse: relatedPersons.spouse,
+                                                father: relatedPersons.father,
+                                                mother: relatedPersons.mother
+                                            };
+                                            resolve(ans)
+                                        }
+                                    });
+
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        })
+    })
+}
+
+const drawFTree = async (request, response, next)=>{
+    let {targetPersonId, level} = request.body;
+    if (!level) {
+        response.status(400).json({ message: 'Missing required fields' });
+        return
+    }
+    try {
+        const sessionId = request.cookies.sessionId;
+        const userId = sessions[sessionId].userId;
+
+        if (!targetPersonId) {
+            targetPersonId = (await executeQuery(`select id from person where ownerUserId = ${userId} and isStandForUser = 1`))[0].id
+        }
+
+        const query = `
+            SELECT id FROM person
+            WHERE ownerUserId = "${userId}"
+        `;
+
+        let ids = (await executeQuery(query)).map(r => r.id)
+        let people = await Promise.all(ids.map(id => getPersonBaseInfo(id)))
+
+        let idToPer = {}
+        let childrenOf = {}
+        let motherOf = {} 
+        let fatherOf = {} 
+        people.forEach(person => {
+            idToPer[person.id] = person
+            childrenOf[person.id] = []
+        })
+        people.forEach(person => {
+            if (person.mother) {
+                motherOf[person.id] = person.mother.id
+                childrenOf[person.mother.id].push(person.id)
+            }
+            if (person.father) {
+                fatherOf[person.id] = person.father.id
+                childrenOf[person.father.id].push(person.id)
+            }
+
+            
+            if (person.spouse) {
+                Object.assign(person.spouse, idToPer[person.spouse.id])
+            }
+            person.children = []
+        })
+        
+        let existedId = new Set()
+        function addPerson(person, parent = null) {
+            if (existedId.has(person.id)) return false
+            existedId.add(person.id)
+
+            if (parent) {
+                let partner = parent.gender == 'Nam' ? (person.mother?.id && idToPer[person.mother.id]) : (person.father?.id && idToPer[person.father.id])
+                parent.children.push({
+                    child: person,
+                    partner: partner
+                })
+            }
+            return true
+        }
+
+        let ancestor = idToPer[targetPersonId]
+        let csdAncentIds = new Set([ancestor.id])
+        let fmIdsGetChr = new Set()
+        while (true) {
+            if (ancestor.father && (!csdAncentIds.has(ancestor.father.id))) {
+                ancestor = idToPer[ancestor.father.id]
+            } else if (level > 2 && ancestor.mother && (!csdAncentIds.has(ancestor.mother.id))) {
+                ancestor = idToPer[ancestor.mother.id]
+                fmIdsGetChr.add(ancestor.id)
+            } else {
+                break
+            }
+            csdAncentIds.add(ancestor.id)
+        }
+        addPerson(ancestor)
+
+        let result = {targetPersonId, ancestor}
+
+        let list = [ancestor]
+        while (list.length != 0) {
+            let person = list.pop()
+            
+            if (person.gender == 'Nam' || level > 2) {
+                if (childrenOf[person.id]) {
+                    childrenOf[person.id].map(childId => idToPer[childId]).forEach(child => {
+                        if (addPerson(child, person)) {
+                            list.push(child)
+                        }
+                    })
+                }
+            }
+        }
+
+        function reduceDepth(x, maxDepth = 5) {
+            if (!x) return x
+            if (maxDepth == 0) return x
+            if (Array.isArray(x)) {
+                return x.map(e => reduceDepth(e, maxDepth - 1))
+            }
+            if (typeof x == 'object') {
+                let result = {}
+                for (let key in x) {
+                    result[key] = reduceDepth(x[key], maxDepth - 1)
+                }
+                return result
+            }
+            return x
+        }
+
+        response.status(200).json(reduceDepth(result))
+    }
+    catch (err) {
+        console.log(err)
+        response.status(500).json({ message: 'Lỗi server!' })
+    }
 };
+
+const getBaseInfPPUcomingEvts = async (request, response, next) => {
+    try {
+        const sessionId = request.cookies.sessionId;
+        const userId = sessions[sessionId].userId;
+        let {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specificPersonIds} = (await executeQuery('select * from upcomingeventtargetinfo where userId = ?', [userId]))[0]
+        
+        let peronIds
+        let personInfos
+
+        if (type == 0) {
+            const query = `
+                SELECT id FROM person
+                WHERE ownerUserId = "${userId}"
+            `;
+
+            peronIds = (await executeQuery(query)).map(r => r.id)
+        } else if (type == 1) {
+            peronIds = (specificPersonIds && specificPersonIds != '') ? specificPersonIds.split('###') : []
+        } else {
+            const query = `
+                SELECT id FROM person
+                WHERE ownerUserId = "${userId}"
+            `;
+
+            peronIds = (await executeQuery(query)).map(r => r.id)
+            let peopleBaseInf = await Promise.all(ids.map(id => getPersonBaseInfo(id)))
+            let idPStandForUser = null
+            let mIdToBsInf = {}
+            let mIdToSId = {}, idToFId = {}, idToMId = {}, idToCId = {}
+            peopleBaseInf.forEach(({id}) => idToCId[id] = [])
+            peopleBaseInf.forEach(person => {
+                let {id, mother, father, spouse, isStandForUser} = person
+                mIdToBsInf[id] = person
+                mIdToSId[id] = spouse?.id
+                idToFId[id] = father?.id
+                idToMId[id] = mother?.id
+                if (mother) idToCId[mother.id].push(id)
+                if (father) idToCId[father.id].push(id)
+                if (isStandForUser) idPStandForUser = id
+            })
+
+            let isMale = id => mIdToBsInf[id].gender == 'Nam'
+            peronIds = []
+
+            
+            
+            let visited = new Set()
+            function travelsal(id, n, goUp) {
+                if (n < -numGenerationsAbove || n > numGenerationsBelow || (n == 0 && !includeEqualGeneration)) {
+                    return
+                }
+                if (!id || visited.has(id)) {
+                    return
+                }
+                visited.add(id)
+                peronIds.push(id)
+
+                if (isMale(id)) {
+                    idToCId[id].forEach(cid => travelsal(cid, n + 1, false))
+                    travelsal(mIdToSId[id], n, false)
+                    if (goUp) {
+                        travelsal(idToFId[id], n - 1, true)
+                    }
+                } else {
+                    if (type == 3) {
+                        idToCId[id].forEach(cid => travelsal(cid, n + 1, false))
+                        travelsal(mIdToSId[id], n, false)
+                    }
+                    if (goUp) {
+                        travelsal(idToFId[id], n - 1, true)
+                    }
+                }
+            }
+            travelsal(idPStandForUser, 0, true)
+
+            personInfos = peronIds.map(id => mIdToBsInf[id])
+        }
+
+        if (!personInfos) {
+            const query = `
+                SELECT id FROM person
+                WHERE ownerUserId = "${userId}"
+            `;
+            peronIds = (await executeQuery(query)).map(r => r.id)
+            let peopleBaseInf = await Promise.all(peronIds.map(id => getPersonBaseInfo(id)))
+            let mIdToBsInf = {}
+            peopleBaseInf.forEach(person => mIdToBsInf[person.id] = person)
+            personInfos = peronIds.map(id => mIdToBsInf[id])
+        }
+        
+        return response.status(200).json(personInfos)
+    }
+    catch (err) {
+        console.log(err)
+        response.status(500).json({ message: 'Lỗi server!' })
+    }
+}
 
 module.exports = {
     postLogin,
@@ -743,4 +1020,5 @@ module.exports = {
     updateField,
     deleteField,
     drawFTree,
+    getBaseInfPPUcomingEvts
 };
