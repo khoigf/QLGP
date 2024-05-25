@@ -1937,7 +1937,7 @@ function load(user) {
                 $card.find('button.add-spouse').click((e) => {
                     e.stopPropagation()
                     
-                    bigPopUp(tempHtml.replace('ROLE', 'mẹ'), {
+                    bigPopUp(tempHtml.replace('ROLE', 'vợ/chồng'), {
                         script: ($popUp) => {
                             $popUp.find('#from-list').click(() => {
                                 puPickP(([person]) => {
