@@ -1111,7 +1111,7 @@ const getBaseInfPPUcomingEvts = async (request, response, next) => {
             `;
 
             peronIds = (await executeQuery(query)).map(r => r.id)
-            let peopleBaseInf = await Promise.all(ids.map(id => getPersonBaseInfo(id)))
+            let peopleBaseInf = await Promise.all(peronIds.map(id => getPersonBaseInfo(id)))
             let idPStandForUser = null
             let mIdToBsInf = {}
             let mIdToSId = {}, idToFId = {}, idToMId = {}, idToCId = {}
