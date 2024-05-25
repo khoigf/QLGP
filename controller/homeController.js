@@ -989,10 +989,10 @@ const drawFTree = async (request, response, next)=>{
 
         let idToPer = {}
         let childrenOf = {}
-        let motherOf = {} 
-        let fatherOf = {} 
+        let motherOf = {}
+        let fatherOf = {}
         people.forEach(person => {
-            idToPer[person.id] = person
+            idToPer[person.id] = JSON.parse(JSON.stringify(person))
             childrenOf[person.id] = []
         })
         people.forEach(person => {
