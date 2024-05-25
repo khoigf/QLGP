@@ -989,25 +989,25 @@ const drawFTree = async (request, response, next)=>{
 
         let idToPer = {}
         let childrenOf = {}
-        let motherOf = {}
-        let fatherOf = {}
         people.forEach(person => {
             idToPer[person.id] = person
             childrenOf[person.id] = []
         })
         people.forEach(person => {
             if (person.mother) {
-                motherOf[person.id] = person.mother.id
                 childrenOf[person.mother.id].push(person.id)
             }
             if (person.father) {
-                fatherOf[person.id] = person.father.id
                 childrenOf[person.father.id].push(person.id)
             }
 
             
             if (person.spouse) {
-                Object.assign(person.spouse, idToPer[person.spouse.id])
+                let spouse = idToPer[person.spouse.id]
+                person.spouse = {
+                    id: spouse.id, callname: spouse.callname, father: spouse.father, mother: spouse.mother, spouse: spouse.spouse,
+                    gender: spouse.gender, birthday: spouse.birthday, deathday: spouse.deathday, avatar: spouse.avatar
+                }
             }
             person.children = []
         })
@@ -1063,27 +1063,7 @@ const drawFTree = async (request, response, next)=>{
             }
         }
 
-        let pool = []
-
-        function reduceDepth(x, maxDepth = 10000000) {
-            if (!x) return x
-            if (maxDepth == 0) return JSON.parse(JSON.stringify(x))
-            if (Array.isArray(x)) {
-                x = x.map(e => reduceDepth(e, maxDepth - 1))
-                return JSON.parse(JSON.stringify(x))
-            }
-            if (typeof x == 'object') {
-                let result = {}
-                for (let key in x) {
-                    result[key] = reduceDepth(x[key], maxDepth - 1)
-                }
-                x = result
-                return JSON.parse(JSON.stringify(x))
-            }
-            return x
-        }
-
-        response.status(200).json(reduceDepth(result))
+        response.status(200).json(result)
     }
     catch (err) {
         console.log(err)
