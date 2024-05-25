@@ -35,6 +35,6 @@ router.get("/getUEPInfo",getUEPInfo);
 
 router.get("/getUpcomingEvents",getUpcomingEvents);
 
-router.post("/updateUpcomingEvent ",updateUpcomingEvent);
+router.post("/updateUpcomingEvent",updateUpcomingEvent);
 
 module.exports = router;
