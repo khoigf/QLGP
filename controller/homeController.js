@@ -1214,8 +1214,9 @@ const updateUpcomingEvent = (request, response, next)=>{
     if (!userId) {
         return res.status(400).json({ message: 'Invalid session' });
     }
+    console.log(request.body.upcomingEventTargetInfo);
     const { type, numGenerationsAbove, numGenerationsBelow, 
-        includeEqualGeneration, specificPersonIds } = req.body.upcomingEventTargetInfo;
+        includeEqualGeneration, specificPersonIds } = request.body.upcomingEventTargetInfo;
     const query = `UPDATE upcomingeventtargetinfo
     SET type = ?, numGenerationsAbove = ?, numGenerationsBelow = ?
     , includeEqualGeneration = ?, specificPersonIds = ?
