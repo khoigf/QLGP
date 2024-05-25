@@ -1,10 +1,10 @@
 
 function API() {
     const BASE_API_URL = '.'
-    const debug = true
+    const DEBUG = true
 
     function myFetch(path, data = {}, method = 'GET') {
-        if (debug) {
+        if (DEBUG) {
             console.log('Input', path, data)
         }
         return fetch(BASE_API_URL + path + ((method == 'GET' && Object.keys(data) != 0) ? '?' + Object.keys(data).map(k => `${k}=${data[k]}`).join('&') : ''), {
@@ -16,7 +16,7 @@ function API() {
         })
         .then(res => res.json())
         .then(outData => {
-            if (debug) {
+            if (DEBUG) {
                 console.log('Output', path, outData)
             }
             return outData
@@ -31,11 +31,14 @@ function API() {
         getPBsInf: data => myFetch('/info', data),
         getPDeatilInf: data => myFetch('/detailInfo', data),
         addPerson: data => myFetch('/addRelative', data,'POST'),
-        udFiledVals: data => myFetch('/updateFValue', data,'POST'),
+        updateFieldValues: data => myFetch('/updateFValue', data,'POST'),
         addField: data => myFetch('/addField', data,'POST'),
         updateField: data => myFetch('/updateField', data,'POST'),
         deleteField: data => myFetch('/deleteField', data,'POST'),
-        drawFTree: data => myFetch('/drawFTree', data,'POST')
+        drawFTree: data => myFetch('/drawFTree', data,'POST'), 
+        getBsInfTgPeopleUCmEvts: data => myFetch('/baseInfPPUComingEvts', data), 
+        getUpCmEvtTgInf: data => myFetch('/getUpcomingEvents', data), 
+        udUpcomingEvtTarInf: data => myFetch('/updateUpcomingEvent', data,'POST')
     }
 }
 

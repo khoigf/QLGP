@@ -996,7 +996,6 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 if (value && value != '') {
                     $element.find('input').val('Đang tải...')
                     $element.find('button').hide()
-                    console.log(value);
                     api.getPBsInf({id: value}).then(result => {
                         $element.find('input').val('Chọn...')
                         $element.find('button').show()
@@ -1138,7 +1137,6 @@ function puEditP(fieldValues, personId, udSuccCb) {
         script: $popUp => {
             fieldValues = makeCopy(fieldValues)
             fieldValues.find(({code}) => code == 'gender').type = 'GENDER'
-            console.log(fieldValues);
             let $from = $('<form class="row g-3"></form>')
             fFacReturnVal = fieldValues.map(fV => gen$fInput(fV, udFieldDefCb))
             $from.append(fFacReturnVal.map(i => i[0]))
@@ -1218,7 +1216,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
                                 return newObj
                             })
                             
-                            api.udFiledVals({data}).then(udSucc)
+                            api.updateFieldValues({data}).then(udSucc)
                         }
                     }
                 }
@@ -1758,7 +1756,7 @@ function load(user) {
                 hasRelMainBranch: true,
                 hasRelShip: false
             },
-            tgPId: null,
+            targetPersonId: null,
             fcPerId: null,
             props: {
                 default: {
@@ -1815,7 +1813,7 @@ function load(user) {
                     <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; top: 100%;"></div>
                 </div>`)
 
-                if (id == config.tgPId) $tgPerCard = $card
+                if (id == config.targetPersonId) $tgPerCard = $card
                 if (id == config.fcPerId) $fPCard = $card
 
                 $card.click(() => {
@@ -1849,7 +1847,7 @@ function load(user) {
                                     $popUp.remove()
                                     let rmLding = popUpLoading()
 
-                                    api.udFiledVals({
+                                    api.updateFieldValues({
                                         data: [{
                                             value: person.id,
                                             personId: id,
@@ -1898,7 +1896,7 @@ function load(user) {
                                     $popUp.remove()
                                     let rmLding = popUpLoading()
 
-                                    api.udFiledVals({
+                                    api.updateFieldValues({
                                         data: [{
                                             value: person.id,
                                             personId: id,
@@ -1947,7 +1945,7 @@ function load(user) {
                                     $popUp.remove()
                                     let rmLding = popUpLoading()
 
-                                    api.udFiledVals({
+                                    api.updateFieldValues({
                                         data: [{
                                             value: person.id,
                                             personId: id,
@@ -1994,7 +1992,7 @@ function load(user) {
                                     $popUp.remove()
                                     let rmLding = popUpLoading()
 
-                                    api.udFiledVals({
+                                    api.updateFieldValues({
                                         data: [{
                                             value: id,
                                             personId: person.id,
@@ -2404,17 +2402,17 @@ function load(user) {
             if (bakAncestor) {
                 drawTree({
                     ancestor: bakAncestor,
-                    tgPId: config.tgPId
+                    targetPersonId: config.targetPersonId
                 })
             } else {
                 let level = 1
                 if (config.targetPeople.showWifes) level = 2
                 else if (config.targetPeople.hasRelMainBranch) level = 3
-                api.drawFTree({tgPId: config.tgPId, level}).then(drawTree)
+                api.drawFTree({targetPersonId: config.targetPersonId, level}).then(drawTree)
             }
 
-            function drawTree({ancestor, tgPId}) {
-                config.tgPId = tgPId
+            function drawTree({ancestor, targetPersonId}) {
+                config.targetPersonId = targetPersonId
                 bakAncestor = null
                 let $tree = genFGroup(ancestor)
                 $tree.css({
@@ -2512,7 +2510,7 @@ function load(user) {
                                 type: 'PERSON',
                                 name: 'Chủ thể biểu đồ gia phả',
                                 isMultiValue: false,
-                                value: tgPId,
+                                value: targetPersonId,
                                 code: 'Some values to make sure can not be changed'
                             })
                             bigPopUp(html, {
@@ -2580,12 +2578,12 @@ function load(user) {
 
                                             let tgPIdFromInp = getPersonId().value
                                             if (!tgPIdFromInp || tgPIdFromInp == '') {
-                                                tgPIdFromInp = tgPId
+                                                tgPIdFromInp = targetPersonId
                                             }
 
                                             $('#t-fmTree').html('')
-                                            if (tgPIdFromInp != tgPId || oldTgP != nTgP) {
-                                                config.tgPId = tgPIdFromInp
+                                            if (tgPIdFromInp != targetPersonId || oldTgP != nTgP) {
+                                                config.targetPersonId = tgPIdFromInp
                                                 config.fcPerId = null
                                                 createTree()
                                             } else {
@@ -2698,7 +2696,7 @@ function load(user) {
                 let pIdsIfChoosed = []
                 bigPopUp('', {
                     script: $popUp => {
-                        api.getUpCmEvtTgInf().then(({type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specPIds}) => {
+                        api.getUpCmEvtTgInf().then(({type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specificPersonIds}) => {
                             let html = `
                                 <h1>Cài đặt đối tượng cho các sự kiện sắp tới</h1>
                                 <input class="form-check-input" type="radio" name="tg-opt" id="target-all" ${type == 0 ? 'checked' : ''}>
@@ -2743,7 +2741,7 @@ function load(user) {
                                 <label for="tg-hCont-icl-equal-gen" class="form-label">Đời ngang tôi</label>
                             </div></div>`)
 
-                            if (type == 1) pIdsIfChoosed = specPIds == '' ? [] : specPIds.split(mulValDel)
+                            if (type == 1) pIdsIfChoosed = specificPersonIds == '' ? [] : specificPersonIds.split(mulValDel)
 
                             $popUp.find('.content').append(`<div style="padding: 0.5rem 2rem;" id="spec-tg-sp"><div style=" border: 2px solid; padding: 1rem; border-radius: 0.5rem;">
                                 <span class="count">${type == 1 ? pIdsIfChoosed.length : 0}</span> người đã người được chọn <button class="btn btn-primary">Thay đổi</button>
@@ -2800,13 +2798,13 @@ function load(user) {
                                     return
                                 }
                                 let includeEqualGeneration = $popUp.find('#tg-hCont-icl-equal-gen')[0].checked ? 1 : 0
-                                data = {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specPIds: []}
+                                data = {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specificPersonIds: []}
                             }
                             else if ($popUp.find('#spec-target')[0].checked) {
-                                data = {type: 1, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specPIds: pIdsIfChoosed.join(mulValDel)}
+                                data = {type: 1, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: pIdsIfChoosed.join(mulValDel)}
                             }
                             else {
-                                data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specPIds: []}
+                                data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: []}
                             }
                             api.udUpcomingEvtTarInf({uCmEvtTgInf: data}).then(() => {
                                 tUCmEvts()
