@@ -626,6 +626,9 @@ const updateFieldValues = (request, response, next) => {
                 }
                 if (fieldDefinitionId == 1 || fieldDefinitionId == 2) {
                     updateSearchString(personId, callback);
+                    if (fieldDefinitionId == 2) { // If fieldDefinitionId == 2 means it's gender
+                        updateParentFields(personId, callback);
+                    }
                 } else if (fieldDefinitionId == 3) {
                     updateSpouseField(personId, value, callback);
                 } else {
@@ -640,6 +643,9 @@ const updateFieldValues = (request, response, next) => {
                 }
                 if (fieldDefinitionCode === 'callname' || fieldDefinitionCode === 'gender') {
                     updateSearchString(personId, callback);
+                    if (fieldDefinitionCode === 'gender') {
+                        updateParentFields(personId, callback);
+                    }
                 } else if (fieldDefinitionCode === 'spouse') {
                     updateSpouseField(personId, value, callback);
                 } else {
@@ -669,6 +675,25 @@ const updateFieldValues = (request, response, next) => {
             const searchString = callname + gender;
             const updateSql = `UPDATE person SET searchString = ? WHERE id = ?`;
             database.query(updateSql, [searchString, personId], (err, results) => {
+                if (err) {
+                    return callback(err);
+                }
+                callback(null);
+            });
+        });
+    };
+
+    const updateParentFields = (personId, callback) => {
+        const parentFieldDefQuery = `SELECT id, code FROM fielddefinition WHERE code IN ('father', 'mother')`;
+        database.query(parentFieldDefQuery, (err, results) => {
+            if (err) {
+                return callback(err);
+            }
+            const fatherFieldDefId = results.find(row => row.code === 'father').id;
+            const motherFieldDefId = results.find(row => row.code === 'mother').id;
+
+            const updateChildrenQuery = `UPDATE fieldvalue SET value = '' WHERE fieldDefinitionId IN (?, ?) AND value = ?`;
+            database.query(updateChildrenQuery, [fatherFieldDefId, motherFieldDefId, personId], (err, results) => {
                 if (err) {
                     return callback(err);
                 }
