@@ -1064,19 +1064,21 @@ const drawFTree = async (request, response, next)=>{
             if (!x) return x
             if (maxDepth == 0) return x
             if (Array.isArray(x)) {
-                return x.map(e => reduceDepth(e, maxDepth - 1))
+                x = x.map(e => reduceDepth(e, maxDepth - 1))
+                return JSON.parse(JSON.stringify(x))
             }
             if (typeof x == 'object') {
                 let result = {}
                 for (let key in x) {
                     result[key] = reduceDepth(x[key], maxDepth - 1)
                 }
-                return result
+                x = result
+                return JSON.parse(JSON.stringify(x))
             }
             return x
         }
 
-        response.status(200).json(JSON.parse(JSON.stringify(reduceDepth(result))))
+        response.status(200).json(reduceDepth(result))
     }
     catch (err) {
         console.log(err)
