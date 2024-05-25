@@ -2806,7 +2806,7 @@ function load(user) {
                             else {
                                 data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: []}
                             }
-                            api.udUpcomingEvtTarInf({uCmEvtTgInf: data}).then(() => {
+                            api.udUpcomingEvtTarInf({upcomingEventTargetInfo: data}).then(() => {
                                 tUCmEvts()
                                 $popUp.remove()
                             })
