@@ -2798,13 +2798,13 @@ function load(user) {
                                     return
                                 }
                                 let includeEqualGeneration = $popUp.find('#tg-hCont-icl-equal-gen')[0].checked ? 1 : 0
-                                data = {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specificPersonIds: []}
+                                data = {type, numGenerationsAbove, numGenerationsBelow, includeEqualGeneration, specificPersonIds: ''}
                             }
                             else if ($popUp.find('#spec-target')[0].checked) {
                                 data = {type: 1, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: pIdsIfChoosed.join(mulValDel)}
                             }
                             else {
-                                data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: []}
+                                data = {type: 0, numGenerationsAbove: 0, numGenerationsBelow: 0, includeEqualGeneration: 0, specificPersonIds: ''}
                             }
                             api.udUpcomingEvtTarInf({upcomingEventTargetInfo: data}).then(() => {
                                 tUCmEvts()
