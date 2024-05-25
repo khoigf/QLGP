@@ -1,3 +1,4 @@
+const { json } = require('body-parser');
 const database = require('../config/database');
 
 const sessions = {};
@@ -1075,7 +1076,7 @@ const drawFTree = async (request, response, next)=>{
             return x
         }
 
-        response.status(200).json(reduceDepth(result))
+        response.status(200).json(JSON.parse(JSON.stringify(reduceDepth(result))))
     }
     catch (err) {
         console.log(err)
