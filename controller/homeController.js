@@ -1215,14 +1215,15 @@ const updateUpcomingEvent = (request, response, next)=>{
         return res.status(400).json({ message: 'Invalid session' });
     }
     const { type, numGenerationsAbove, numGenerationsBelow, 
-        includeEqualGeneration, specificPersonIds } = req.body;
-    const query = `UPDATE UpcomingEventTargetInfo
+        includeEqualGeneration, specificPersonIds } = req.body.upcomingEventTargetInfo;
+    const query = `UPDATE upcomingeventtargetinfo
     SET type = ?, numGenerationsAbove = ?, numGenerationsBelow = ?
     , includeEqualGeneration = ?, specificPersonIds = ?
     WHERE userId = ?`
     database.query(query, [type, numGenerationsAbove, numGenerationsBelow, 
     includeEqualGeneration, specificPersonIds, userId], (error,result)=>{
         if(error){
+            console.log(error);
             response.status(500).json({ message: error.message });
         }else{
             response.status(200).json({ message: 'OK' });
