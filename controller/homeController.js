@@ -992,7 +992,7 @@ const drawFTree = async (request, response, next)=>{
         let motherOf = {}
         let fatherOf = {}
         people.forEach(person => {
-            idToPer[person.id] = JSON.parse(JSON.stringify(person))
+            idToPer[person.id] = person
             childrenOf[person.id] = []
         })
         people.forEach(person => {
@@ -1020,7 +1020,7 @@ const drawFTree = async (request, response, next)=>{
             if (parent) {
                 let partner = parent.gender == 'Nam' ? (person.mother?.id && idToPer[person.mother.id]) : (person.father?.id && idToPer[person.father.id])
                 parent.children.push({
-                    child: person,
+                    child: JSON.parse(JSON.stringify(person)),
                     partner: JSON.parse(JSON.stringify(partner))
                 })
             }
@@ -1205,7 +1205,7 @@ const getUpcomingEvents = async (request, response, next)=>{
     if (!userId) {
         return res.status(400).json({ message: 'Invalid session' });
     }
-    response.status(200).json(upcomingEvents);
+    response.status(200).json(upcomingEvents[0]);
 }
 
 const updateUpcomingEvent = (request, response, next)=>{
