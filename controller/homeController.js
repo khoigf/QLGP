@@ -1062,7 +1062,7 @@ const drawFTree = async (request, response, next)=>{
 
         function reduceDepth(x, maxDepth = 5) {
             if (!x) return x
-            if (maxDepth == 0) return x
+            if (maxDepth == 0) return JSON.parse(JSON.stringify(x))
             if (Array.isArray(x)) {
                 x = x.map(e => reduceDepth(e, maxDepth - 1))
                 return JSON.parse(JSON.stringify(x))
