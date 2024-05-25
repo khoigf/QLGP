@@ -334,7 +334,19 @@ const addRelative = (request, response, next) => {
                                 if (error) {
                                     response.status(500).json({ message: error.message });
                                 } else {
-                                    response.status(200).json({ message: 'OK' });
+                                    if(asRole==='spouse'){
+                                        const updateSql1 = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
+
+                                        database.query(updateSql1, [target, pId, 3], (err, results) => {
+                                            if (err) {
+                                                response.status(500).json({ message: error.message });
+                                            }else{
+                                                response.status(200).json({ message: 'OK' });
+                                            }
+                                        });
+                                    }else{
+                                        response.status(200).json({ message: 'OK' });
+                                    }
                                 }
                             });
                         } else {
