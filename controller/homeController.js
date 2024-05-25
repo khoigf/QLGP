@@ -1,6 +1,7 @@
 const database = require('../config/database');
 
-const sessions = {}
+const sessions = {};
+
 const getPersonData = async (ids) => {
     var isMultivalue = Array.isArray(ids);
     if (!isMultivalue) {
@@ -72,6 +73,7 @@ const getPersonData = async (ids) => {
         throw error;
     }
 };
+
 const executeQuery = async (query, params) => {
     return new Promise((resolve, reject) => {
         database.query(query, params, (error, results) => {
@@ -83,6 +85,7 @@ const executeQuery = async (query, params) => {
         });
     });
 };
+
 const postLogin = (request, response, next) => {
     const user_name = request.body.username;
     const user_password = request.body.password;
@@ -140,8 +143,8 @@ const postRegister = (request, response, next) => {
                         response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                     } else {
                         // response.status(200).json({ message: 'OK' });
-                        const query3 = `INSERT INTO person (ownerUserId,isStandForUser) VALUES (?,?)`;
-                        database.query(query3, [id, 1], function (error, data) {
+                        const query3 = `INSERT INTO person (ownerUserId,searchString,isStandForUser) VALUES (?,?,?)`;
+                        database.query(query3, [id, 'TôiNam', 1], function (error, data) {
                             if (error) {
                                 response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                             } else {
@@ -154,7 +157,7 @@ const postRegister = (request, response, next) => {
                                         response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                                     } else {
                                         const pId = data[0].id;
-                                        console.log(pId);
+                                        // console.log(pId);
                                         const query5 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
                                                         VALUES ?`;
                                         const Data = [
@@ -171,7 +174,15 @@ const postRegister = (request, response, next) => {
                                             if (error) {
                                                 response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                                             } else {
-                                                response.status(200).json({ message: 'OK' });
+                                                const query6 = `INSERT INTO UpcomingEventTargetInfo (userId, type, numGenerationsAbove, 
+                                                    numGenerationsBelow, includeEqualGeneration, specificPersonIds) VALUES (?, ?, ?, ?, ?, ?)`;
+                                                database.query(query6, [id, '0', null, null, null, null], function (error, data) {
+                                                    if (error) {
+                                                        response.status(500).json({ message: error.message });
+                                                    } else {
+                                                        response.status(200).json({ message: 'OK' });
+                                                    }
+                                                });
                                             }
                                         });
                                     }
@@ -220,56 +231,120 @@ const addRelative = (request, response, next) => {
     const { data, target, asRole } = request.body;
     if (!data) {
         response.status(400).json({ message: 'No data' });
+        return;
     }
+    //console.log(data);
     const sessionId = request.cookies.sessionId;
+    const userId = sessions[sessionId].userId;
+
     const query1 = `INSERT INTO person (ownerUserId) VALUES (?)`;
-    database.query(query1, [sessions[sessionId].userId], function (error, result) {
+    database.query(query1, [userId], function (error, result) {
         if (error) {
             response.status(500).json({ message: error.message });
         } else {
             const pId = result.insertId;
             const kq = data.length;
-            var check = 0;
-            for (var i = 0; i < data.length; i++) {
-                const query2 = `
-                            SELECT id FROM fielddefinition 
-                            WHERE code = "${data[i].code}"`;
-                const codei = data[i].code;
-                const valuei = data[i].value;
-                database.query(query2, function (error, result) {
+            let check = 0;
+            let callname = '';
+            let gender = '';
+
+            // Function to insert fieldvalue
+            const insertFieldValue = (personId, fieldDefinitionId, fieldDefinitionCode, value, callback) => {
+                const query = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode, value) VALUES (?,?,?,?)`;
+                database.query(query, [personId, fieldDefinitionId, fieldDefinitionCode, value], callback);
+            };
+
+            // Insert provided field values
+            data.forEach((entry, index) => {
+                const query2 = `SELECT id FROM fielddefinition WHERE code = ?`;
+                const codei = entry.code;
+                const valuei = entry.value;
+                if (codei === 'callname') {
+                    callname = valuei;
+                } else if (codei === 'gender') {
+                    gender = valuei;
+                }
+                if (codei === 'spouse'){
+                    const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
+
+                    database.query(updateSql, [pId, valuei, 3], (err, results) => {
+                        if (err) {
+                            response.status(500).json({ message: error.message });
+                        }else{
+                            console.log("Update spouse");
+                        }
+                    });
+                }
+                database.query(query2, [codei], function (error, result) {
                     if (error) {
                         response.status(500).json({ message: error.message });
                     } else {
-                        const id = result[0].id;
-                        const query3 = `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode,value) 
-                        VALUES (?,?,?,?)`;
-                        database.query(query3, [pId, id, codei, valuei], function (error, result) {
+                        const fieldDefinitionId = result[0].id;
+                        insertFieldValue(pId, fieldDefinitionId, codei, valuei, (error) => {
                             if (error) {
                                 response.status(500).json({ message: error.message });
                             } else {
                                 check++;
-                                if (check == kq) {
-                                    response.status(200).json({ message: 'OK' });
+                                if (check === kq) {
+                                    // Fetch additional fielddefinitions for this user
+                                    const query3 = `SELECT id, code FROM fielddefinition WHERE isForAllPeopleOfUserId = ?`;
+                                    database.query(query3, [userId], function (error, results) {
+                                        if (error) {
+                                            response.status(500).json({ message: error.message });
+                                        } else {
+                                            let additionalCheck = 0;
+                                            const totalInserts = results.length;
+                                            if (totalInserts === 0) {
+                                                finalizeResponse();
+                                            } else {
+                                                results.forEach(fieldDef => {
+                                                    insertFieldValue(pId, fieldDef.id, fieldDef.code, "", (error) => {
+                                                        if (error) {
+                                                            response.status(500).json({ message: error.message });
+                                                        } else {
+                                                            additionalCheck++;
+                                                            if (additionalCheck === totalInserts) {
+                                                                finalizeResponse();
+                                                            }
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                        }
+                                    });
                                 }
                             }
                         });
                     }
                 });
-            }
-            if (asRole && target) {
-                const query2 = `UPDATE fieldvalue SET value = ${pId} 
-                            WHERE fieldDefinitionCode = ${asRole} AND personID = ${target} `;
-                database.query(query2, function (error, result) {
+            });
+
+            // Finalize the response after all insertions are done
+            const finalizeResponse = () => {
+                const searchString = callname + gender;
+                const query4 = `UPDATE person SET searchString = ? WHERE id = ?`;
+                database.query(query4, [searchString, pId], function (error) {
                     if (error) {
                         response.status(500).json({ message: error.message });
                     } else {
-                        console.log("OK");
+                        if (asRole && target) {
+                            const query5 = `UPDATE fieldvalue SET value = ? WHERE fieldDefinitionCode = ? AND personID = ?`;
+                            database.query(query5, [pId, asRole, target], function (error) {
+                                if (error) {
+                                    response.status(500).json({ message: error.message });
+                                } else {
+                                    response.status(200).json({ message: 'OK' });
+                                }
+                            });
+                        } else {
+                            response.status(200).json({ message: 'OK' });
+                        }
                     }
                 });
-            }
+            };
         }
     });
-}
+};
 
 const getInfo = (request, response, next) => {
     const id = request.query.id;
@@ -302,7 +377,7 @@ const getInfo = (request, response, next) => {
                             var check = 0;
                             for (const relation of result) {
                                 const relatedId = relation.value;
-                                console.log(relatedId);
+                                // console.log(relatedId);
                                 const query4 = `SELECT value FROM fieldvalue 
                                             WHERE personId = ? AND fieldDefinitionCode IN (?, ?)`
                                 database.query(query4, [relatedId, 'callname', 'avatar'], function (error, result) {
@@ -321,7 +396,7 @@ const getInfo = (request, response, next) => {
                                         }
                                     }
                                     if (check == 3) {
-                                        console.log(relatedPersons);
+                                        // console.log(relatedPersons);
                                         const ans = {
                                             ...person,
                                             ...fields,
@@ -357,7 +432,7 @@ const getAllInfo = (request, response, next) => {
         } else {
             const info = []
             const len = result.length;
-            console.log(len);
+            // console.log(len);
             var i = 0;
             for (const pid of result) {
                 const id = pid.id;
@@ -480,9 +555,9 @@ const getDetailInfo = (request, response, next) => {
                     const spouseId = await getFamilyMemberId(id, 'spouse');
                     const fatherId = await getFamilyMemberId(id, 'father');
                     const motherId = await getFamilyMemberId(id, 'mother');
-                    console.log("spouseId:",spouseId);
-                    console.log("fatherId:",fatherId);
-                    console.log("motherId:",motherId);
+                    // console.log("spouseId:",spouseId);
+                    // console.log("fatherId:",fatherId);
+                    // console.log("motherId:",motherId);
                     person.spouse = spouseId ? await getPersonData(spouseId) : null;
                     person.father = fatherId ? await getPersonData(fatherId) : null;
                     person.mother = motherId ? await getPersonData(motherId) : null;
@@ -496,7 +571,7 @@ const getDetailInfo = (request, response, next) => {
                         )
                     `, ['father', 'mother', id]);
                     const childrenIds = Array.isArray(childrenRows) ? childrenRows.map(row => row.id) : childrenRows.id;
-                    console.log("childrenId:",childrenIds);
+                    // console.log("childrenId:",childrenIds);
                     person.children = childrenIds ? await getPersonData(childrenIds) : null;
                     const sameFatherIds = fatherId ? (
                         await executeQuery(`
@@ -509,7 +584,7 @@ const getDetailInfo = (request, response, next) => {
                             ) AND id <> ?
                         `, [fatherId, id])
                     ).map(row => row.id) : [];
-                    console.log("sameFatherId:",sameFatherIds);
+                    // console.log("sameFatherId:",sameFatherIds);
                     const sameMotherIds = motherId ? (
                         await executeQuery(`
                             SELECT id
@@ -521,7 +596,7 @@ const getDetailInfo = (request, response, next) => {
                             ) AND id <> ?
                         `, [motherId, id])
                     ).map(row => row.id) : [];
-                    console.log("sameMotherId:",sameMotherIds);
+                    // console.log("sameMotherId:",sameMotherIds);
                     person.siblings = {
                         sameFather: sameFatherIds ? await getPersonData(sameFatherIds) : null,
                         sameMother: sameMotherIds ? await getPersonData(sameMotherIds) : null
@@ -538,37 +613,131 @@ const updateFieldValues = (request, response, next) => {
     if (!data || !Array.isArray(data)) {
         return response.status(400).json({ message: 'Invalid data format' });
     }
-    // Hàm cập nhật giá trị trường thông tin
+
     const updateFieldValue = (entry, callback) => {
         const { value, fieldDefinitionId, personId, fieldDefinitionCode } = entry;
+        let sql;
+
         if (fieldDefinitionId) {
-            const sql = `
-                UPDATE fieldvalue
-                SET value = ?
-                WHERE personId = ? AND fieldDefinitionId = ?
-            `;
+            sql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
             database.query(sql, [value, personId, fieldDefinitionId], (err, results) => {
                 if (err) {
                     return callback(err);
                 }
-                callback(null);
+                if (fieldDefinitionId == 1 || fieldDefinitionId == 2) {
+                    updateSearchString(personId, callback);
+                    if (fieldDefinitionId == 2) { // If fieldDefinitionId == 2 means it's gender
+                        updateParentFields(personId, callback);
+                    }
+                } else if (fieldDefinitionId == 3) {
+                    updateSpouseField(personId, value, callback);
+                } else {
+                    callback(null);
+                }
             });
         } else if (fieldDefinitionCode) {
-            const sql = `
-                UPDATE fieldvalue
-                SET value = ?
-                WHERE personId = ? AND fieldDefinitionCode = ?
-            `;
+            sql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionCode = ?`;
             database.query(sql, [value, personId, fieldDefinitionCode], (err, results) => {
                 if (err) {
                     return callback(err);
                 }
-                callback(null);
+                if (fieldDefinitionCode === 'callname' || fieldDefinitionCode === 'gender') {
+                    updateSearchString(personId, callback);
+                    if (fieldDefinitionCode === 'gender') {
+                        updateParentFields(personId, callback);
+                    }
+                } else if (fieldDefinitionCode === 'spouse') {
+                    updateSpouseField(personId, value, callback);
+                } else {
+                    callback(null);
+                }
             });
         } else {
             callback(new Error('No valid fieldDefinitionId or fieldDefinitionCode provided'));
         }
     };
+
+    const updateSearchString = (personId, callback) => {
+        const sql = `SELECT value, fieldDefinitionCode FROM fieldvalue WHERE personId = ? AND fieldDefinitionCode IN ('callname', 'gender')`;
+        database.query(sql, [personId], (err, results) => {
+            if (err) {
+                return callback(err);
+            }
+            let callname = '';
+            let gender = '';
+            results.forEach(row => {
+                if (row.fieldDefinitionCode === 'callname') {
+                    callname = row.value;
+                } else if (row.fieldDefinitionCode === 'gender') {
+                    gender = row.value;
+                }
+            });
+            const searchString = callname + gender;
+            const updateSql = `UPDATE person SET searchString = ? WHERE id = ?`;
+            database.query(updateSql, [searchString, personId], (err, results) => {
+                if (err) {
+                    return callback(err);
+                }
+                callback(null);
+            });
+        });
+    };
+
+    const updateParentFields = (personId, callback) => {
+        const parentFieldDefQuery = `SELECT id, code FROM fielddefinition WHERE code IN ('father', 'mother')`;
+        database.query(parentFieldDefQuery, (err, results) => {
+            if (err) {
+                return callback(err);
+            }
+            const fatherFieldDefId = results.find(row => row.code === 'father').id;
+            const motherFieldDefId = results.find(row => row.code === 'mother').id;
+
+            const updateChildrenQuery = `UPDATE fieldvalue SET value = '' WHERE fieldDefinitionId IN (?, ?) AND value = ?`;
+            database.query(updateChildrenQuery, [fatherFieldDefId, motherFieldDefId, personId], (err, results) => {
+                if (err) {
+                    return callback(err);
+                }
+                callback(null);
+            });
+        });
+    };
+
+    const updateSpouseField = (personId, spouseId, callback) => {
+        if (!spouseId) {
+            return callback(null);
+        }
+
+        // Update the spouse's spouse field to point back to the original person
+        const sql = `SELECT id FROM fielddefinition WHERE code = 'spouse'`;
+        database.query(sql, (err, results) => {
+            if (err) {
+                return callback(err);
+            }
+            const spouseFieldDefId = results[0].id;
+            const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
+
+            // First, update the spouse's spouse field
+            database.query(updateSql, [personId, spouseId, spouseFieldDefId], (err, results) => {
+                if (err) {
+                    return callback(err);
+                }
+
+                // Then update the original person's spouse field if needed (ensure bidirectional update)
+                const checkSql = `SELECT value FROM fieldvalue WHERE personId = ? AND fieldDefinitionId = ?`;
+                database.query(checkSql, [personId, spouseFieldDefId], (err, results) => {
+                    if (err) {
+                        return callback(err);
+                    }
+                    if (results.length > 0 && results[0].value != spouseId) {
+                        database.query(updateSql, [spouseId, personId, spouseFieldDefId], callback);
+                    } else {
+                        callback(null);
+                    }
+                });
+            });
+        });
+    };
+
     const updateAllFieldValues = (data, callback) => {
         let errorOccurred = false;
         let completed = 0;
@@ -586,6 +755,7 @@ const updateFieldValues = (request, response, next) => {
             });
         });
     };
+
     updateAllFieldValues(data, (err) => {
         if (err) {
             response.status(500).json({ message: err.message });
@@ -602,14 +772,21 @@ const addField = (request, response, next)=>{
             || typeof isMultiValue === 'undefined' || typeof isForAllPeople === 'undefined') {
         return response.status(400).json({ message: 'Invalid input data' });
     }
-
+    const sessionId = request.cookies.sessionId;
+    const userId = sessions[sessionId].userId;
+    var isFAPOUI;
+    if(isForAllPeople){
+        isFAPOUI=userId;
+    }else{
+        isFAPOUI=0;
+    }
     // Thêm trường thông tin vào bảng FieldDefinition
     const sqlInsertFieldDefinition = `
-        INSERT INTO fielddefinition (code, name, description, type, isMultivalue, isForAllPeople)
-        VALUES (NULL, ?, ?, ?, ?, ?)
+        INSERT INTO fielddefinition (code, name, description, type, isMultivalue, isForAllPeople, isForAllPeopleOfUserId)
+        VALUES (NULL, ?, ?, ?, ?, ?, ?)
     `;
 
-    database.query(sqlInsertFieldDefinition, [name, description, type, isMultiValue, isForAllPeople], (err, results) => {
+    database.query(sqlInsertFieldDefinition, [name, description, type, isMultiValue, isForAllPeople, isFAPOUI], (err, results) => {
         if (err) {
             response.status(500).json({ message: err.message });
         }
@@ -618,8 +795,6 @@ const addField = (request, response, next)=>{
 
         if (isForAllPeople) {
             // Tạo các bản ghi FieldValue cho tất cả người thân của người dùng
-            const sessionId = request.cookies.sessionId;
-            const userId = sessions[sessionId].userId;
             const sqlSelectPersons = `SELECT id FROM person WHERE ownerUserId = ${userId}`;
             database.query(sqlSelectPersons, (err, persons) => {
                 if (err) {
@@ -1006,6 +1181,52 @@ const getBaseInfPPUcomingEvts = async (request, response, next) => {
     }
 }
 
+const getUpcomingEvents = async (request, response, next)=>{
+    const getUpcomingEvents = async (userId) => {
+        try {
+          // Query để lấy thông tin các sự kiện sắp tới
+          const upcomingEventsResult = await executeQuery(
+            `SELECT * FROM upcomingeventtargetinfo WHERE userId = ${userId}`
+          );
+      
+          return upcomingEventsResult;
+        } catch (error) {
+          console.error("Error fetching upcoming events:", error);
+          throw error;
+        }
+    };
+    const sessionId = request.cookies.sessionId;
+    // const userId=1;
+    const userId = sessions[sessionId].userId;
+    const upcomingEvents = await getUpcomingEvents(userId);
+    if (!userId) {
+        return res.status(400).json({ message: 'Invalid session' });
+    }
+    response.status(200).json(upcomingEvents);
+}
+
+const updateUpcomingEvent = (request, response, next)=>{
+    const sessionId = request.cookies.sessionId;
+    const userId = sessions[sessionId].userId;
+    if (!userId) {
+        return res.status(400).json({ message: 'Invalid session' });
+    }
+    const { type, numGenerationsAbove, numGenerationsBelow, 
+        includeEqualGeneration, specificPersonIds } = req.body;
+    const query = `UPDATE UpcomingEventTargetInfo
+    SET type = ?, numGenerationsAbove = ?, numGenerationsBelow = ?
+    , includeEqualGeneration = ?, specificPersonIds = ?
+    WHERE userId = ?`
+    database.query(query, [type, numGenerationsAbove, numGenerationsBelow, 
+    includeEqualGeneration, specificPersonIds, userId], (error,result)=>{
+        if(error){
+            response.status(500).json({ message: error.message });
+        }else{
+            response.status(200).json({ message: 'OK' });
+        }
+    });
+}
+
 module.exports = {
     postLogin,
     postRegister,
@@ -1020,5 +1241,7 @@ module.exports = {
     updateField,
     deleteField,
     drawFTree,
-    getBaseInfPPUcomingEvts
+    getBaseInfPPUcomingEvts,
+    getUpcomingEvents,
+    updateUpcomingEvent,
 };

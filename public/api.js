@@ -37,8 +37,8 @@ function API() {
         deleteField: data => myFetch('/deleteField', data,'POST'),
         drawFTree: data => myFetch('/drawFTree', data,'POST'), 
         getBsInfTgPeopleUCmEvts: data => myFetch('/baseInfPPUComingEvts', data), 
-        getUpCmEvtTgInf: data => myFetch('', data), 
-        udUpcomingEvtTarInf: data => myFetch('', data) 
+        getUpCmEvtTgInf: data => myFetch('/getUpcomingEvents', data), 
+        udUpcomingEvtTarInf: data => myFetch('/updateUpcomingEvent', data,'POST')
     }
 }
 
