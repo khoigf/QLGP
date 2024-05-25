@@ -1094,7 +1094,7 @@ const getBaseInfPPUcomingEvts = async (request, response, next) => {
         
         let peronIds
         let personInfos
-
+        type = Number(type);
         if (type == 0) {
             const query = `
                 SELECT id FROM person
@@ -1165,11 +1165,6 @@ const getBaseInfPPUcomingEvts = async (request, response, next) => {
         }
 
         if (!personInfos) {
-            const query = `
-                SELECT id FROM person
-                WHERE ownerUserId = "${userId}"
-            `;
-            peronIds = (await executeQuery(query)).map(r => r.id)
             let peopleBaseInf = await Promise.all(peronIds.map(id => getPersonBaseInfo(id)))
             let mIdToBsInf = {}
             peopleBaseInf.forEach(person => mIdToBsInf[person.id] = person)
