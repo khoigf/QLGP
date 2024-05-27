@@ -33,7 +33,7 @@ function fn_reZoom() {
 }
 
 
-function makeCopy(x, maxDepth = 5) {
+function makeCopy(x, maxDepth = 10e10) {
     if (!x) return x
     if (maxDepth == 0) return x
     if (Array.isArray(x)) {
@@ -192,7 +192,7 @@ function bigPopUp(html, option) {
         hideClBtn: false,
         clByOtClick: false,
         clCb: null,
-        zIndex: null
+        zIndex: 2
     }
     if (option) {
         for (let key in option) {
@@ -213,7 +213,11 @@ function bigPopUp(html, option) {
     </div>`
 
     let jPopUp = $(popupHtml)
-    if (option.zIndex) jPopUp.css('z-index', option.zIndex)
+    if (option.zIndex) {
+        jPopUp.css('z-index', option.zIndex)
+        jPopUp.find('.button-group-background').css('z-index', option.zIndex + 1)
+        jPopUp.find('.button-group').css('z-index', option.zIndex + 2)
+    }
     if (option.clByOtClick) jPopUp.click(() => {jPopUp.remove(); option.clCb?.()})
     jPopUp.children().click(e => e.stopPropagation())
     jPopUp.find('button.close').click(() => {jPopUp.remove(); option.clCb?.()})

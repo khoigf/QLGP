@@ -238,7 +238,16 @@ function puAddP(addScCb, { gender, target, asRole, targetGender } = {}) {
                 })()),
                 gen$fInput({type: 'DATE', name: 'Ngày sinh', code: 'birthday'}),
                 gen$fInput({type: 'LUNAR_DATE', name: 'Ngày mất', code: 'deathday'}),
-                gen$fInput({type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}),
+                gen$fInput((() => {
+                    let result = {type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}
+                    if (asRole == 'spouse') {
+                        Object.assign(result, {
+                            value: target,
+                            disabled: true
+                        })
+                    }
+                    return result
+                })()),
                 gen$fInput((() => {
                     let result = {type: 'PERSON', name: 'Bố', code: 'father'}
                     if (asRole == 'child' && targetGender == 'Nam') {
@@ -329,7 +338,7 @@ function puPickP(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, picke
                             top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0;" ${isMultiValue ? '' : `name="${rdName}"`} ${pickedIds.has(id) ? 'checked' : ''}></td>
                         <td style="width: 3em;">
                             <div class="avatar avatar-md">
-                                <img class="avatar-img" src="${avatar || defAvtUrl}">
+                                <img class="avatar-img my-img" src="${avatar || defAvtUrl}">
                             </div>
                         </td>
                         <td><div>${callname}</div></td>
@@ -1804,10 +1813,10 @@ function load(user) {
                         </div>` : ''}
                     </div>
 
-                    ${father ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-father" style="z-index: 3; position: absolute; left: 0; bottom: calc(100% + 8px);">Thêm bố</button>`}
-                    ${mother ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-mother" style="z-index: 3; position: absolute; right: 0; bottom: calc(100% + 8px);">Thêm mẹ</button>`}
-                    ${spouse ? '' : `<button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-spouse" style="z-index: 3; position: absolute; right: 0; top: calc(100% + 8px);">Thêm vợ/chồng</button>`}
-                    <button type="button" class="btn btn-outline-secondary btn-sm hoverShow add-child" style="z-index: 3; position: absolute; left: 0; top: calc(100% + 8px);">Thêm con</button>
+                    ${father ? '' : `<button type="button" class="btn btn-primary btn-sm hoverShow add-father" style="z-index: 3; position: absolute; left: 0; bottom: calc(100% + 8px);">Thêm bố</button>`}
+                    ${mother ? '' : `<button type="button" class="btn btn-primary btn-sm hoverShow add-mother" style="z-index: 3; position: absolute; right: 0; bottom: calc(100% + 8px);">Thêm mẹ</button>`}
+                    ${spouse ? '' : `<button type="button" class="btn btn-primary btn-sm hoverShow add-spouse" style="z-index: 3; position: absolute; right: 0; top: calc(100% + 8px);">Thêm vợ/chồng</button>`}
+                    <button type="button" class="btn btn-primary btn-sm hoverShow add-child" style="z-index: 3; position: absolute; left: 0; top: calc(100% + 8px);">Thêm con</button>
 
                     <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; bottom: 100%;"></div>
                     <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; top: 100%;"></div>
