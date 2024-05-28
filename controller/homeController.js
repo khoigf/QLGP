@@ -145,7 +145,7 @@ const postRegister = (request, response, next) => {
                     } else {
                         // response.status(200).json({ message: 'OK' });
                         const query3 = `INSERT INTO person (ownerUserId,searchString,isStandForUser) VALUES (?,?,?)`;
-                        database.query(query3, [id, 'TôiNam', 1], function (error, data) {
+                        database.query(query3, [id, 'Tôi Nam', 1], function (error, data) {
                             if (error) {
                                 response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                             } else {
@@ -322,7 +322,7 @@ const addRelative = (request, response, next) => {
 
             // Finalize the response after all insertions are done
             const finalizeResponse = () => {
-                const searchString = callname + gender;
+                const searchString = callname+" " + gender;
                 const query4 = `UPDATE person SET searchString = ? WHERE id = ?`;
                 database.query(query4, [searchString, pId], function (error) {
                     if (error) {
@@ -685,7 +685,7 @@ const updateFieldValues = (request, response, next) => {
                     gender = row.value;
                 }
             });
-            const searchString = callname + gender;
+            const searchString = callname+" " + gender;
             const updateSql = `UPDATE person SET searchString = ? WHERE id = ?`;
             database.query(updateSql, [searchString, personId], (err, results) => {
                 if (err) {
