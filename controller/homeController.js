@@ -1,6 +1,6 @@
-const { json } = require('body-parser');
 const database = require('../config/database');
-
+const { backupFamilyDataToCSV, restoreFamilyDataFromCSV } = require('./backup');
+const fs = require('fs');
 const sessions = {};
 
 const getPersonData = async (ids) => {
@@ -428,7 +428,7 @@ const getInfo = (request, response, next) => {
             });
         }
     })
-}
+};
 
 const getAllInfo = (request, response, next) => {
     const uId = sessions[request.cookies.sessionId].userId;
@@ -517,7 +517,7 @@ const getAllInfo = (request, response, next) => {
             }
         }
     });
-}
+};
 
 const getDetailInfo = (request, response, next) => {
     const id = request.query.id;
@@ -885,7 +885,7 @@ const updateField = (request, response, next)=>{
 
         response.status(200).json({ message: 'OK' });
     });
-}
+};
 
 const deleteField = (request, response, next)=>{
     const id = request.body.id;
@@ -908,7 +908,7 @@ const deleteField = (request, response, next)=>{
             });
         }
     });
-}
+};
 
 function getPersonBaseInfo(id) {
     return new Promise((resolve, reject) => {
@@ -975,7 +975,7 @@ function getPersonBaseInfo(id) {
             }
         })
     })
-}
+};
 
 const drawFTree = async (request, response, next)=>{
     let {targetPersonId, level} = request.body;
@@ -1174,7 +1174,7 @@ const getBaseInfPPUcomingEvts = async (request, response, next) => {
         console.log(err)
         response.status(500).json({ message: 'Lỗi server!' })
     }
-}
+};
 
 const getUpcomingEvents = async (request, response, next)=>{
     const getUpcomingEvents = async (userId) => {
@@ -1198,7 +1198,7 @@ const getUpcomingEvents = async (request, response, next)=>{
         return res.status(400).json({ message: 'Invalid session' });
     }
     response.status(200).json(upcomingEvents[0]);
-}
+};
 
 const updateUpcomingEvent = (request, response, next)=>{
     const sessionId = request.cookies.sessionId;
@@ -1222,7 +1222,44 @@ const updateUpcomingEvent = (request, response, next)=>{
             response.status(200).json({ message: 'OK' });
         }
     });
-}
+};
+
+const getBackup = async (request, response, next)=>{
+    try {
+        const sessionId = request.cookies.sessionId;
+        const userId = sessions[sessionId].userId;
+        //const userId=1;
+        const filePath = await backupFamilyDataToCSV(userId);
+
+        response.download(filePath, (err) => {
+            if (err) {
+                console.error(err);
+                response.status(500).send('File download error');
+            } else {
+                fs.unlinkSync(filePath);
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).send('Server error');
+    }
+};
+
+const postRestore = async (request, response, next)=>{
+    try {
+        const sessionId = request.cookies.sessionId;
+        const newUserId = sessions[sessionId].userId;
+        const filePath = request.file.path;
+
+        await restoreFamilyDataFromCSV(filePath, newUserId);
+
+        fs.unlinkSync(filePath);
+        response.status(200).send('Data restored successfully');
+    } catch (error) {
+        console.error(error);
+        response.status(500).send('Server error');
+    }
+};
 
 module.exports = {
     postLogin,
@@ -1241,4 +1278,6 @@ module.exports = {
     getBaseInfPPUcomingEvts,
     getUpcomingEvents,
     updateUpcomingEvent,
+    getBackup,
+    postRestore,
 };
