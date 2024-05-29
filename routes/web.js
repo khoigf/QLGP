@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const {postLogin,postRegister,getUser,getLogout,addRelative,
     getInfo,getAllInfo,getDetailInfo,updateFieldValues,
     addField,updateField,deleteField,drawFTree,getBaseInfPPUcomingEvts,getUpcomingEvents,
@@ -39,6 +41,6 @@ router.post("/updateUpcomingEvent",updateUpcomingEvent);
 
 router.get("/getBackup",getBackup);
 
-router.post("/postRestore",postRestore);
+router.post("/postRestore",upload.single('file'),postRestore);
 
 module.exports = router;
