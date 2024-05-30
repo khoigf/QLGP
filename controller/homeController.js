@@ -1229,16 +1229,17 @@ const getBackup = async (request, response, next)=>{
         const sessionId = request.cookies.sessionId;
         const userId = sessions[sessionId].userId;
         //const userId=1;
-        const filePath = await backupFamilyDataToCSV(userId);
+        const csvData = await backupFamilyDataToCSV(userId);
 
-        response.download(filePath, (err) => {
-            if (err) {
-                console.error(err);
-                response.status(500).send('File download error');
-            } else {
-                fs.unlinkSync(filePath);
-            }
-        });
+        // response.download(filePath, (err) => {
+        //     if (err) {
+        //         console.error(err);
+        //         response.status(500).send('File download error');
+        //     } else {
+        //         fs.unlinkSync(filePath);
+        //     }
+        // });
+        response.status(200).json(csvData);
     } catch (error) {
         console.error(error);
         response.status(500).send('Server error');
@@ -1249,11 +1250,8 @@ const postRestore = async (request, response, next)=>{
     try {
         const sessionId = request.cookies.sessionId;
         const newUserId = sessions[sessionId].userId;
-        const filePath = request.file.path;
-
-        await restoreFamilyDataFromCSV(filePath, newUserId);
-
-        fs.unlinkSync(filePath);
+        const fileContent = request.body.fileContent;
+        await restoreFamilyDataFromCSV(fileContent, newUserId);
         response.status(200).send('Data restored successfully');
     } catch (error) {
         console.error(error);
