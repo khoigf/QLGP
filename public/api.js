@@ -38,7 +38,12 @@ function API() {
         drawFTree: data => myFetch('/drawFTree', data,'POST'), 
         getBsInfTgPeopleUCmEvts: data => myFetch('/baseInfPPUComingEvts', data), 
         getUpCmEvtTgInf: data => myFetch('/getUpcomingEvents', data), 
-        udUpcomingEvtTarInf: data => myFetch('/updateUpcomingEvent', data,'POST') 
+        udUpcomingEvtTarInf: data => myFetch('/updateUpcomingEvent', data,'POST'), 
+        logout: data => myFetch('', data),
+        deletePerson: data => myFetch('', data),
+        statistic: data => myFetch('', data),
+        backup: data => myFetch('', data),
+        restore: data => myFetch('', data)
     }
 }
 
