@@ -39,11 +39,11 @@ function API() {
         getBsInfTgPeopleUCmEvts: data => myFetch('/baseInfPPUComingEvts', data), 
         getUpCmEvtTgInf: data => myFetch('/getUpcomingEvents', data), 
         udUpcomingEvtTarInf: data => myFetch('/updateUpcomingEvent', data,'POST'), 
-        logout: data => myFetch('', data),
-        deletePerson: data => myFetch('', data),
-        statistic: data => myFetch('', data),
-        backup: data => myFetch('', data),
-        restore: data => myFetch('', data)
+        logout: data => myFetch('/logout', data),
+        deletePerson: data => myFetch('/deleteRelative', data,'POST'),
+        statistic: data => myFetch('/getStatistic', data),
+        backup: data => myFetch('/getBackup', data),
+        restore: data => myFetch('/postRestore', data,'POST')
     }
 }
 

@@ -268,10 +268,10 @@ const addRelative = (request, response, next) => {
                 if (codei === 'spouse'){
 
                     const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
-                    const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND fieldDefinitionId = ?`;
-                    database.query(deleteSql, [valuei, 3], (err, results) => {
+                    const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
+                    database.query(deleteSql, [pId, valuei, 3,valuei], (err, results) => {
                         if (err) {
-                            return callback(err);
+                            response.status(500).json({ message: error.message });
                         }
                         database.query(updateSql, [pId, valuei, 3], (err, results) => {
                             if (err) {
@@ -342,14 +342,19 @@ const addRelative = (request, response, next) => {
                                 } else {
                                     if(asRole==='spouse'){
                                         const updateSql1 = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
-
-                                        database.query(updateSql1, [target, pId, 3], (err, results) => {
+                                        const deleteSql1 = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
+                                        database.query(deleteSql1, [pId, target, 3,target], (err, results) => {
                                             if (err) {
                                                 response.status(500).json({ message: error.message });
-                                            }else{
-                                                response.status(200).json({ message: 'OK' });
                                             }
-                                        });
+                                            database.query(updateSql1, [target, pId, 3], (err, results) => {
+                                                if (err) {
+                                                    response.status(500).json({ message: error.message });
+                                                }else{
+                                                    response.status(200).json({ message: 'OK' });
+                                                }
+                                            });
+                                        });  
                                     }else{
                                         response.status(200).json({ message: 'OK' });
                                     }
@@ -734,9 +739,9 @@ const updateFieldValues = (request, response, next) => {
             }
             const spouseFieldDefId = results[0].id;
             const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
-            const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND fieldDefinitionId = ?`;
+            const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
             // First, update the spouse's spouse field
-            database.query(deleteSql, [spouseId, spouseFieldDefId], (err, results) => {
+            database.query(deleteSql, [personId,spouseId, spouseFieldDefId,spouseId], (err, results) => {
                 if (err) {
                     return callback(err);
                 }
@@ -1261,8 +1266,8 @@ const postRestore = async (request, response, next)=>{
     try {
         const sessionId = request.cookies.sessionId;
         const newUserId = sessions[sessionId].userId;
-        const fileContent = request.body.data;
-        await restoreFamilyDataFromCSV(fileContent, newUserId);
+        const data = request.body.data;
+        await restoreFamilyDataFromCSV(data, newUserId);
         response.status(200).json({ message: 'OK' });
     } catch (error) {
         console.error(error);
