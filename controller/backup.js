@@ -127,25 +127,26 @@ async function personExists(ownerUserId, searchString) {
 async function backupFamilyDataToCSV(userId) {
     try {
         const familyData = await getAllBaseInfo(userId);
-        let csvData = 'PersonID,Callname,Avatar,Birthday,Deathday,Gender,isStandForUser,SpouseID,SpouseName,SpouseAvatar,FatherID,FatherName,FatherAvatar,MotherID,MotherName,MotherAvatar\n';
+        let csvData = 'PersonID,Callname,Avatar,Birthday,Deathday,Gender,isStandForUser,SpouseID,SpouseName,FatherID,FatherName,MotherID,MotherName\n';
         familyData.forEach(entry => {
             const person = entry.person;
             const fields = entry.fields;
+            fields.avatar=fields.avatar?fields.avatar.replaceAll(',','###'):null;
             const relatedPersons = entry.relatedPersons;
             csvData += `${person.id},"${fields.callname}","${fields.avatar}","${fields.birthday}","${fields.deathday}","${fields.gender}","${person.isStandForUser}",`;
             if (relatedPersons.spouse) {
-                csvData += `${relatedPersons.spouse.id},"${relatedPersons.spouse.callname}","${relatedPersons.spouse.avatar}",`;
+                csvData += `${relatedPersons.spouse.id},"${relatedPersons.spouse.callname}",`;
             } else {
-                csvData += ',,,';
+                csvData += ',,';
             }
             if (relatedPersons.father) {
-                csvData += `${relatedPersons.father.id},"${relatedPersons.father.callname}","${relatedPersons.father.avatar}",`;
+                csvData += `${relatedPersons.father.id},"${relatedPersons.father.callname}",`;
             } else {
-                csvData += ',,,';
+                csvData += ',,';
             }
 
             if (relatedPersons.mother) {
-                csvData += `${relatedPersons.mother.id},"${relatedPersons.mother.callname}","${relatedPersons.mother.avatar}"\n`;
+                csvData += `${relatedPersons.mother.id},"${relatedPersons.mother.callname}",\n`;
             } else {
                 csvData += ',,\n';
             }
@@ -169,21 +170,17 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         const columns = row.split(','); // Split each row into columns
         const personId = parseInt(columns[0]);
         const callname = columns[1].replace(/"/g, '');
-        const avatar = columns[2].replace(/"/g, '');
+        const avatar = columns[2]?columns[2].replace(/"/g, '').replaceAll('###',','):columns[2];
         const birthday = columns[3].replace(/"/g, '');
         const deathday = columns[4].replace(/"/g, '');
         const gender = columns[5].replace(/"/g, '');
         const isStandForUser = columns[6].replace(/"/g, '');
         const spouseId = columns[7] ? parseInt(columns[7]) : null;
         const spouseName = columns[8].replace(/"/g, '');
-        const spouseAvatar = columns[9].replace(/"/g, '');
-        const fatherId = columns[10] ? parseInt(columns[10]) : null;
-        const fatherName = columns[11].replace(/"/g, '');
-        const fatherAvatar = columns[12].replace(/"/g, '');
-        const motherId = columns[13] ? parseInt(columns[13]) : null;
-        const motherName = columns[14].replace(/"/g, '');
-        const motherAvatar = columns[15].replace(/"/g, '');
-
+        const fatherId = columns[9] ? parseInt(columns[9]) : null;
+        const fatherName = columns[10].replace(/"/g, '');
+        const motherId = columns[11] ? parseInt(columns[11]) : null;
+        const motherName = columns[12].replace(/"/g, '');
         results.push({
             person: {
                 id: personId,
@@ -197,9 +194,9 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
                 gender: gender
             },
             relatedPersons: {
-                spouse: { id: spouseId, callname: spouseName, avatar: spouseAvatar },
-                father: { id: fatherId, callname: fatherName, avatar: fatherAvatar },
-                mother: { id: motherId, callname: motherName, avatar: motherAvatar }
+                spouse: { id: spouseId, callname: spouseName },
+                father: { id: fatherId, callname: fatherName },
+                mother: { id: motherId, callname: motherName }
             }
         });
     });
@@ -255,8 +252,16 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         if (!relatedPersons.mother.id) {
             await insertFieldValue(personId, 5, "mother", relatedPersons.mother.id);
         }
-        await insertFieldValue(personId, 6, "birthday", fields.birthday);
-        await insertFieldValue(personId, 7, "deathday", fields.deathday);
+        if(fields.birthday==='null'){
+            await insertFieldValue(personId, 6, "birthday", '');
+        }else{
+            await insertFieldValue(personId, 6, "birthday", fields.birthday);
+        }
+        if(fields.deathday==='null'){
+            await insertFieldValue(personId, 7, "deathday", '');
+        }else{
+            await insertFieldValue(personId, 7, "deathday",fields.deathday);
+        }
         await insertFieldValue(personId, 8, "avatar", fields.avatar);
     }
     for (const entry of results) {

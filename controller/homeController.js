@@ -1282,8 +1282,6 @@ const deleteRelative = (request, response, next)=>{
     }
     const deletePersonQuery = `DELETE FROM person WHERE id = ?`;
     const deleteFieldValuesQuery = `DELETE FROM fieldvalue WHERE personId = ?`;
-    const updateFieldValueQuery = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND (fieldDefinitionCode = 'spouse' OR fieldDefinitionCode = 'father' OR fieldDefinitionCode = 'mother')`;
-
     database.query(deletePersonQuery, [id], function (error, result) {
         if (error) {
             response.status(500).json({ message: error.message });
@@ -1292,11 +1290,25 @@ const deleteRelative = (request, response, next)=>{
                 if (error) {
                     response.status(500).json({ message: error.message });
                 } else {
+                    const updateFieldValueQuery = `SELECT * FROM fielddefinition WHERE type = 'PERSON'`
                     database.query(updateFieldValueQuery, [id], function (error, result) {
                         if (error) {
                             response.status(500).json({ message: error.message });
                         } else {
-                            response.status(200).json({ message: 'OK' });
+                            let dem=0;
+                            result.forEach(data => {
+                                const updateFieldValues = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND fieldDefinitionId = ?`;
+                                database.query(updateFieldValues, [id, data.id], function (error, result1) {
+                                    if (error) {
+                                        response.status(500).json({ message: error.message });
+                                    } else {
+                                        dem++
+                                        if (dem == result.length) {
+                                            response.status(200).json({ message: 'OK' });
+                                        }
+                                    }
+                                });
+                            })
                         }
                     });
                 }
@@ -1333,7 +1345,7 @@ const getStatistic = async (request, response, next)=>{
         const age = deathday.getFullYear() - birthday.getFullYear();
         const monthDiff = deathday.getMonth() - birthday.getMonth();
         const dayDiff = deathday.getDate() - birthday.getDate();
-                
+        console.log(birthday,deathday);
         if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
             ages.push(age - 1);
         } else {
