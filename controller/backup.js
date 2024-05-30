@@ -1,6 +1,5 @@
 // backup.js
 const database = require('../config/database');
-const csvParser = require('csv-parser');
 
 async function executeQuery(query, params) {
     return new Promise((resolve, reject) => {
@@ -14,7 +13,7 @@ async function executeQuery(query, params) {
     });
 }
 
-async function getAllInfo(uId) {
+async function getAllBaseInfo(uId) {
     return new Promise((resolve, reject) => {
         if (!uId) {
             reject({ message: 'UNAUTHORIZED' });
@@ -127,7 +126,7 @@ async function personExists(ownerUserId, searchString) {
 
 async function backupFamilyDataToCSV(userId) {
     try {
-        const familyData = await getAllInfo(userId);
+        const familyData = await getAllBaseInfo(userId);
         let csvData = 'PersonID,Callname,Avatar,Birthday,Deathday,Gender,isStandForUser,SpouseID,SpouseName,SpouseAvatar,FatherID,FatherName,FatherAvatar,MotherID,MotherName,MotherAvatar\n';
         familyData.forEach(entry => {
             const person = entry.person;
@@ -161,27 +160,29 @@ async function backupFamilyDataToCSV(userId) {
     }
 }
 
-async function restoreFamilyDataFromCSV(fileContent, newUserId) {
+async function restoreFamilyDataFromCSV(data, newUserId) {
     const results = [];
-    const csvData = csvParser(fileContent); // Parse nội dung CSV từ dữ liệu đã cho
+    const rows = data.split('\n').filter(row => row.trim() !== ''); // Split data into rows and filter out empty lines
+    const headers = rows.shift().split(','); // Get the headers
 
-    csvData.forEach(row => {
-        const personId = parseInt(row.PersonID);
-        const callname = row.Callname;
-        const avatar = row.Avatar;
-        const birthday = row.Birthday;
-        const deathday = row.Deathday;
-        const gender = row.Gender;
-        const isStandForUser = row.isStandForUser;
-        const spouseId = parseInt(row.SpouseID);
-        const spouseName = row.SpouseName;
-        const spouseAvatar = row.SpouseAvatar;
-        const fatherId = parseInt(row.FatherID);
-        const fatherName = row.FatherName;
-        const fatherAvatar = row.FatherAvatar;
-        const motherId = parseInt(row.MotherID);
-        const motherName = row.MotherName;
-        const motherAvatar = row.MotherAvatar;
+    rows.forEach(row => {
+        const columns = row.split(','); // Split each row into columns
+        const personId = parseInt(columns[0]);
+        const callname = columns[1].replace(/"/g, '');
+        const avatar = columns[2].replace(/"/g, '');
+        const birthday = columns[3].replace(/"/g, '');
+        const deathday = columns[4].replace(/"/g, '');
+        const gender = columns[5].replace(/"/g, '');
+        const isStandForUser = columns[6].replace(/"/g, '');
+        const spouseId = columns[7] ? parseInt(columns[7]) : null;
+        const spouseName = columns[8].replace(/"/g, '');
+        const spouseAvatar = columns[9].replace(/"/g, '');
+        const fatherId = columns[10] ? parseInt(columns[10]) : null;
+        const fatherName = columns[11].replace(/"/g, '');
+        const fatherAvatar = columns[12].replace(/"/g, '');
+        const motherId = columns[13] ? parseInt(columns[13]) : null;
+        const motherName = columns[14].replace(/"/g, '');
+        const motherAvatar = columns[15].replace(/"/g, '');
 
         results.push({
             person: {
@@ -196,9 +197,9 @@ async function restoreFamilyDataFromCSV(fileContent, newUserId) {
                 gender: gender
             },
             relatedPersons: {
-                spouse: spouseId,
-                father: fatherId,
-                mother: motherId
+                spouse: { id: spouseId, callname: spouseName, avatar: spouseAvatar },
+                father: { id: fatherId, callname: fatherName, avatar: fatherAvatar },
+                mother: { id: motherId, callname: motherName, avatar: motherAvatar }
             }
         });
     });
@@ -208,24 +209,94 @@ async function restoreFamilyDataFromCSV(fileContent, newUserId) {
         const fields = entry.fields;
         const relatedPersons = entry.relatedPersons;
         const searchString = fields.callname + " " + fields.gender;
+        console.log(person,fields,relatedPersons);
         let personId = await personExists(newUserId, searchString);
-        if (!personId) {
-            personId = await insertPerson({
-                ownerUserId: newUserId,
-                searchString: searchString,
-                isStandForUser: ""
+        console.log("PersonID : ", personId);
+        if (personId) {
+            const deletePersonQuery = `DELETE FROM person WHERE id = ?`;
+            const deleteFieldValuesQuery = `DELETE FROM fieldvalue WHERE personId = ?`;
+            const updateFieldValueQuery = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND (fieldDefinitionCode = 'spouse' OR fieldDefinitionCode = 'father' OR fieldDefinitionCode = 'mother')`;
+        
+            database.query(deletePersonQuery, [personId], function (error, result) {
+                if (error) {
+                    console.log(error);
+                } else {
+                    database.query(deleteFieldValuesQuery, [personId], function (error, result) {
+                        if (error) {
+                            console.log(error);
+                        } else {
+                            database.query(updateFieldValueQuery, [personId], function (error, result) {
+                                if (error) {
+                                    console.log(error);
+                                }
+                            });
+                        }
+                    });
+                }
             });
-            await insertFieldValue(personId, 1, "callname", fields.callname);
-            await insertFieldValue(personId, 2, "gender", fields.gender);
-            await insertFieldValue(personId, 3, "spouse", relatedPersons.spouse);
-            await insertFieldValue(personId, 4, "father", relatedPersons.father);
-            await insertFieldValue(personId, 5, "mother", relatedPersons.mother);
-            await insertFieldValue(personId, 6, "birthday", fields.birthday);
-            await insertFieldValue(personId, 7, "deathday", fields.deathday);
-            await insertFieldValue(personId, 8, "avatar", fields.avatar);
+        }
+        let isStandForUser = null;
+        if(person.isStandForUser == 1){
+            isStandForUser = 1;
+        }
+        personId = await insertPerson({
+            ownerUserId: newUserId,
+            searchString: searchString,
+            isStandForUser: isStandForUser
+        });
+        await insertFieldValue(personId, 1, "callname", fields.callname);
+        await insertFieldValue(personId, 2, "gender", fields.gender);
+        if (!relatedPersons.spouse.id) {
+            await insertFieldValue(personId, 3, "spouse", relatedPersons.spouse.id);
+        }
+        if (!relatedPersons.father.id) {
+            await insertFieldValue(personId, 4, "father", relatedPersons.father.id);
+        }
+        if (!relatedPersons.mother.id) {
+            await insertFieldValue(personId, 5, "mother", relatedPersons.mother.id);
+        }
+        await insertFieldValue(personId, 6, "birthday", fields.birthday);
+        await insertFieldValue(personId, 7, "deathday", fields.deathday);
+        await insertFieldValue(personId, 8, "avatar", fields.avatar);
+    }
+    for (const entry of results) {
+        const person = entry.person;
+        const fields = entry.fields;
+        const relatedPersons = entry.relatedPersons;
+        const searchString = fields.callname + " " + fields.gender;
+        let personId = await personExists(newUserId, searchString);
+        if (relatedPersons.spouse.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.spouse.callname,newUserId]
+            );
+            await insertFieldValue(personId, 3, "spouse", rows.length > 0 ? rows[0].id : null);
+        }
+        if (relatedPersons.father.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.father.callname,newUserId]
+            );
+            await insertFieldValue(personId, 4, "father", rows.length > 0 ? rows[0].id : null);
+        }
+        if (relatedPersons.mother.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.mother.callname,newUserId]
+            );
+            await insertFieldValue(personId, 5, "mother", rows.length > 0 ? rows[0].id : null);
         }
     }
     console.log('CSV file successfully processed');
 }
 
-module.exports = { backupFamilyDataToCSV, restoreFamilyDataFromCSV };
+module.exports = { backupFamilyDataToCSV, restoreFamilyDataFromCSV ,getAllBaseInfo};

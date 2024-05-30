@@ -1,5 +1,5 @@
 const database = require('../config/database');
-const { backupFamilyDataToCSV, restoreFamilyDataFromCSV } = require('./backup');
+const { backupFamilyDataToCSV, restoreFamilyDataFromCSV, getAllBaseInfo } = require('./backup');
 const fs = require('fs');
 const sessions = {};
 
@@ -266,14 +266,20 @@ const addRelative = (request, response, next) => {
                     gender = valuei;
                 }
                 if (codei === 'spouse'){
-                    const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
 
-                    database.query(updateSql, [pId, valuei, 3], (err, results) => {
+                    const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
+                    const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
+                    database.query(deleteSql, [pId, valuei, 3,valuei], (err, results) => {
                         if (err) {
                             response.status(500).json({ message: error.message });
-                        }else{
-                            console.log("Update spouse");
                         }
+                        database.query(updateSql, [pId, valuei, 3], (err, results) => {
+                            if (err) {
+                                response.status(500).json({ message: error.message });
+                            }else{
+                                console.log("Update spouse");
+                            }
+                        });
                     });
                 }
                 database.query(query2, [codei], function (error, result) {
@@ -336,14 +342,19 @@ const addRelative = (request, response, next) => {
                                 } else {
                                     if(asRole==='spouse'){
                                         const updateSql1 = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
-
-                                        database.query(updateSql1, [target, pId, 3], (err, results) => {
+                                        const deleteSql1 = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
+                                        database.query(deleteSql1, [pId, target, 3,target], (err, results) => {
                                             if (err) {
                                                 response.status(500).json({ message: error.message });
-                                            }else{
-                                                response.status(200).json({ message: 'OK' });
                                             }
-                                        });
+                                            database.query(updateSql1, [target, pId, 3], (err, results) => {
+                                                if (err) {
+                                                    response.status(500).json({ message: error.message });
+                                                }else{
+                                                    response.status(200).json({ message: 'OK' });
+                                                }
+                                            });
+                                        });  
                                     }else{
                                         response.status(200).json({ message: 'OK' });
                                     }
@@ -728,24 +739,29 @@ const updateFieldValues = (request, response, next) => {
             }
             const spouseFieldDefId = results[0].id;
             const updateSql = `UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ?`;
-
+            const deleteSql = `UPDATE fieldvalue SET value = NULL WHERE value IN (?,?) AND fieldDefinitionId = ? AND personId <> ?`;
             // First, update the spouse's spouse field
-            database.query(updateSql, [personId, spouseId, spouseFieldDefId], (err, results) => {
+            database.query(deleteSql, [personId,spouseId, spouseFieldDefId,spouseId], (err, results) => {
                 if (err) {
                     return callback(err);
                 }
-
-                // Then update the original person's spouse field if needed (ensure bidirectional update)
-                const checkSql = `SELECT value FROM fieldvalue WHERE personId = ? AND fieldDefinitionId = ?`;
-                database.query(checkSql, [personId, spouseFieldDefId], (err, results) => {
+                database.query(updateSql, [personId, spouseId, spouseFieldDefId], (err, results) => {
                     if (err) {
                         return callback(err);
                     }
-                    if (results.length > 0 && results[0].value != spouseId) {
-                        database.query(updateSql, [spouseId, personId, spouseFieldDefId], callback);
-                    } else {
-                        callback(null);
-                    }
+    
+                    // Then update the original person's spouse field if needed (ensure bidirectional update)
+                    const checkSql = `SELECT value FROM fieldvalue WHERE personId = ? AND fieldDefinitionId = ?`;
+                    database.query(checkSql, [personId, spouseFieldDefId], (err, results) => {
+                        if (err) {
+                            return callback(err);
+                        }
+                        if (results.length > 0 && results[0].value != spouseId) {
+                            database.query(updateSql, [spouseId, personId, spouseFieldDefId], callback);
+                        } else {
+                            callback(null);
+                        }
+                    });
                 });
             });
         });
@@ -1229,7 +1245,7 @@ const getBackup = async (request, response, next)=>{
         const sessionId = request.cookies.sessionId;
         const userId = sessions[sessionId].userId;
         //const userId=1;
-        const csvData = await backupFamilyDataToCSV(userId);
+        const data = await backupFamilyDataToCSV(userId);
 
         // response.download(filePath, (err) => {
         //     if (err) {
@@ -1239,7 +1255,7 @@ const getBackup = async (request, response, next)=>{
         //         fs.unlinkSync(filePath);
         //     }
         // });
-        response.status(200).json(csvData);
+        response.status(200).json({data:data});
     } catch (error) {
         console.error(error);
         response.status(500).send('Server error');
@@ -1250,14 +1266,86 @@ const postRestore = async (request, response, next)=>{
     try {
         const sessionId = request.cookies.sessionId;
         const newUserId = sessions[sessionId].userId;
-        const fileContent = request.body.fileContent;
-        await restoreFamilyDataFromCSV(fileContent, newUserId);
-        response.status(200).send('Data restored successfully');
+        const data = request.body.data;
+        await restoreFamilyDataFromCSV(data, newUserId);
+        response.status(200).json({ message: 'OK' });
     } catch (error) {
         console.error(error);
         response.status(500).send('Server error');
     }
 };
+
+const deleteRelative = (request, response, next)=>{
+    const id = request.body.id;
+    if (!id ) {
+        response.status(400).json({ message: 'Missing required fields' });
+    }
+    const deletePersonQuery = `DELETE FROM person WHERE id = ?`;
+    const deleteFieldValuesQuery = `DELETE FROM fieldvalue WHERE personId = ?`;
+    const updateFieldValueQuery = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND (fieldDefinitionCode = 'spouse' OR fieldDefinitionCode = 'father' OR fieldDefinitionCode = 'mother')`;
+
+    database.query(deletePersonQuery, [id], function (error, result) {
+        if (error) {
+            response.status(500).json({ message: error.message });
+        } else {
+            database.query(deleteFieldValuesQuery, [id], function (error, result) {
+                if (error) {
+                    response.status(500).json({ message: error.message });
+                } else {
+                    database.query(updateFieldValueQuery, [id], function (error, result) {
+                        if (error) {
+                            response.status(500).json({ message: error.message });
+                        } else {
+                            response.status(200).json({ message: 'OK' });
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
+
+const getStatistic = async (request, response, next)=>{
+    const sessionId = request.cookies.sessionId;
+    const userId = sessions[sessionId].userId;
+    //const userId=1;
+    const allPeople = await getAllBaseInfo(userId);
+    const parseDate = (dateString) => {
+        const [day, month, year] = dateString.split('/');
+        return new Date(year, month - 1, day);
+    };
+    let numMales = 0;
+    let numFemales = 0;
+    let ages = [];
+    const currentDate = new Date();
+
+    allPeople.forEach(entry => {
+        const person = entry.fields;
+        if (person.gender === 'Nam') {
+            numMales++;
+        } else if (person.gender === 'Nữ') {
+            numFemales++;
+        }
+
+        // Calculate age
+        const birthday = parseDate(person.birthday);
+        const deathday = person.deathday ? parseDate(person.deathday) : currentDate;
+        const age = deathday.getFullYear() - birthday.getFullYear();
+        const monthDiff = deathday.getMonth() - birthday.getMonth();
+        const dayDiff = deathday.getDate() - birthday.getDate();
+                
+        if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+            ages.push(age - 1);
+        } else {
+            ages.push(age);
+        }
+    });
+    response.status(200).json({
+        numMales: numMales,
+        numFemales: numFemales,
+        ages: ages
+    });
+}
 
 module.exports = {
     postLogin,
@@ -1276,6 +1364,8 @@ module.exports = {
     getBaseInfPPUcomingEvts,
     getUpcomingEvents,
     updateUpcomingEvent,
+    deleteRelative,
+    getStatistic,
     getBackup,
     postRestore,
 };
