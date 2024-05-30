@@ -1,6 +1,6 @@
 
 const mulValDel = '###'
-const imgMaxSizes = 100*1000 
+const imgMaxSizes = 1*1000*1000 
 const pUViewPBsIdx = 100000
 const defAvtUrl = './resources/default-avatar.jpg'
 
@@ -88,7 +88,7 @@ function puAddField(personId, addScCb) {
             <input type="text" class="form-control" id="field-desc" name="description" placeholder="Ví dụ: Đây là trường thông tin ghi các tiểu sử của người này">
         </div>
 
-        <div class="col-6">
+        <div class="col-6" style="display: none;">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="f-mval" name="isMultiValue">
                 <label class="form-check-label" for="f-mval">Trường thông tin là đa giá trị</label>
@@ -2772,6 +2772,7 @@ function load(user) {
         let $tab = $('#t-stas')
 
         api.statistic().then(({numMales, numFemales, ages}) => {
+            ages = ages.map(a => (a || a === 0) ? a : -1)
             function genCardHtml(header, value, icon, bgColor) {
                 return ` <div class="card">
                     <div class="card-body p-3 d-flex align-items-center">
