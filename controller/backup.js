@@ -14,7 +14,7 @@ async function executeQuery(query, params) {
     });
 }
 
-async function getAllInfo(uId) {
+async function getAllBaseInfo(uId) {
     return new Promise((resolve, reject) => {
         if (!uId) {
             reject({ message: 'UNAUTHORIZED' });
@@ -127,7 +127,7 @@ async function personExists(ownerUserId, searchString) {
 
 async function backupFamilyDataToCSV(userId) {
     try {
-        const familyData = await getAllInfo(userId);
+        const familyData = await getAllBaseInfo(userId);
         let csvData = 'PersonID,Callname,Avatar,Birthday,Deathday,Gender,isStandForUser,SpouseID,SpouseName,SpouseAvatar,FatherID,FatherName,FatherAvatar,MotherID,MotherName,MotherAvatar\n';
         familyData.forEach(entry => {
             const person = entry.person;
@@ -228,4 +228,4 @@ async function restoreFamilyDataFromCSV(fileContent, newUserId) {
     console.log('CSV file successfully processed');
 }
 
-module.exports = { backupFamilyDataToCSV, restoreFamilyDataFromCSV };
+module.exports = { backupFamilyDataToCSV, restoreFamilyDataFromCSV ,getAllBaseInfo};
