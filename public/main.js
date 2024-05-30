@@ -403,6 +403,11 @@ function puPickP(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, picke
         },
         hideClBtn: true,
         buttons: [{
+            html: 'Thoát',
+            click: $popUp => {
+                $popUp.remove()
+            }
+        }, {
             html: 'Xác nhận',
             type: 'success',
             click: $popUp => {
@@ -1236,7 +1241,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
 
 let udCbStack = []
 function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
-    let {callname, gender, birthday, deathday, avatar, id} = person
+    let {callname, gender, birthday, deathday, avatar, id, isStandForUser} = person
     let showedPId = id
     let html = `
         <div class="row" style="margin-bottom: 3rem;">
@@ -1332,6 +1337,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
         script: ($popUp) => {
             let $editButton = null
             let $downloadBtn = null
+            let $deleteBtn = null
             $popUp.find('button').each((index, button) => {
                 let $button = $(button)
                 if ($button.find('svg').length != 0 && $button.html().includes('Chỉnh sửa thông tin')) {
@@ -1340,14 +1346,20 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                 if ($button.find('svg').length != 0 && $button.html().includes('Tải thông tin')) {
                     $downloadBtn = $button
                 }
+                if ($button.find('svg').length != 0 && $button.html().includes('Xóa người thân')) {
+                    $deleteBtn = $button
+                }
             })
             $editButton.hide()
             $downloadBtn.hide()
+            $deleteBtn.hide()
 
             api.getPDeatilInf({id}).then(({id, father, mother, spouse, fieldValues, siblings, children}) => {
                 fVFull = [...fieldValues]
                 $editButton.show()
                 $downloadBtn.show()
+                if (isStandForUser) $deleteBtn.remove()
+                else $deleteBtn.show()
 
                 fieldValues = fieldValues.filter(({fieldDefinitionCode, code}) => !code && !fieldDefinitionCode)
                 $popUp.find('.rel-pp tbody .loading').remove()
@@ -1429,26 +1441,46 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
             if (firstTime) $(document.body).removeClass('stScroll')
             udCbStack.pop()
         },
-        buttons: [{
-            html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg> Chỉnh sửa thông tin',
-            type: 'info',
-            click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
-        }, {
-            html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-data-transfer-down"></use></svg> Tải thông tin',
-            type: 'success',
-            click: ($popUp) => {
-                domtoimage.toPng($popUp.find('.pop-up > .content')[0], { bgcolor: 'white',
-                    style: {
-                        height: 'unset'
-                    }
-                }).then((dataUrl) => {
-                    let link = document.createElement('a')
-                    link.href = dataUrl
-                    link.download = `Thông tin về ${callname}`
-                    link.click()
-                })
+        buttons: [
+            {
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use></svg> Xóa người thân',
+                type: 'danger',
+                click: _$popUp => {
+                    popUpConfirm('Bạn có chắc chắn muốn xóa người thân này không', () => {
+                        let rmLding = popUpLoading()
+                        _$popUp.remove()
+                        api.deletePerson({id}).then(() => {
+                            rmLding()
+                            $popUp.remove()
+                            if (firstTime) $(document.body).removeClass('stScroll')
+                            udCbStack[udCbIdx]()
+                            udCbStack.pop()
+                        })
+                    })
+                }
+            },
+            {
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-data-transfer-down"></use></svg> Tải thông tin',
+                type: 'success',
+                click: ($popUp) => {
+                    domtoimage.toPng($popUp.find('.pop-up > .content')[0], { bgcolor: 'white',
+                        style: {
+                            height: 'unset'
+                        }
+                    }).then((dataUrl) => {
+                        let link = document.createElement('a')
+                        link.href = dataUrl
+                        link.download = `Thông tin về ${callname}`
+                        link.click()
+                    })
+                }
+            },
+            {
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg> Chỉnh sửa thông tin',
+                type: 'info',
+                click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
             }
-        }]
+        ]
     })
 }
 
@@ -1664,13 +1696,29 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
 }
 
 function load(user) {
+    $('#logout').click(() => {
+        api.logout().then(() => {
+            window.location.href = './login.html'
+        })
+    })
     function tPPMng() {
         $('#t-people-mng').html(`
-            <button type="button" class="btn btn-primary" style="margin-bottom: 12px;" id="add-person">
+            <button type="button" class="btn btn-primary" style="margin-bottom: 12px; margin-right: 1rem;" id="add-person">
                 <svg class="icon">
                 <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-user-plus"></use>
                 </svg> Thêm người thân
             </button>
+            <button type="button" class="btn btn-primary" style="margin-bottom: 12px; margin-right: 1rem;" id="dl-backup">
+                <svg class="icon">
+                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-cloud-download"></use>
+                </svg> Tải file sao lưu
+            </button>
+            <button type="button" class="btn btn-primary" style="margin-bottom: 12px; margin-right: 1rem;" id="restore">
+                <svg class="icon">
+                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-cloud-upload"></use>
+                </svg> Nạp file sao lưu
+            </button>
+            <input type="file" accept=".csv" hidden id="input-csv"/>
             <table class="table border mb-0">
                 <thead class="table-light fw-semibold">
                 <tr class="align-middle">
@@ -1764,6 +1812,45 @@ function load(user) {
                 rfPPList()
             })
         })
+
+        $('#dl-backup').click(() => {
+            let rmLding = popUpLoading()
+            api.backup().then(({data}) => {
+                function downloadData(data, filename = 'data.txt') {
+                    let link = document.createElement("a")
+                    link.href = URL.createObjectURL(new Blob([data], { type: 'text/plain' }))
+                    link.download = filename
+                    link.click()
+                    
+                    URL.revokeObjectURL(link.href)
+                }
+                let t = new Date()
+                downloadData(data, `backup-QLGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}.csv`)
+                rmLding()
+            })
+        })
+
+        $('#restore').click(() => {
+            $('#input-csv').click()
+        })
+
+        $('#input-csv').change(function () {
+            let rmLding = popUpLoading()
+            let file = this.files ? this.files[0] : null
+            if (!file) return
+            let reader = new FileReader();
+            reader.readAsText(file, "UTF-8");
+            reader.onload = function (evt) {
+                let data = evt.target.result;
+                api.restore({data}).then(() => {
+                    rmLding()
+                    rfPPList()
+                })
+            }
+            reader.onerror = function (evt) {
+                rmLding()
+            }
+        })
     }
     tPPMng() 
 
@@ -1815,7 +1902,7 @@ function load(user) {
 
             let $tgPerCard = null
             let $fPCard = null
-            function genPCard(person) {
+            function genPCard(person, asSpouse = false) {
                 let {id, callname, gender, birthday, deathday, father, mother, spouse, avatar, isStandForUser} = person
 
                 let $card = $(`<div class="card" style="height: ${props.height}px; width: ${props.width}px; position: relative;">
@@ -1843,8 +1930,14 @@ function load(user) {
                     <div class="hoverShow" style="z-index: 2; position: absolute; width: 100%; left: 0; height: 2rem; top: 100%;"></div>
                 </div>`)
 
-                if (id == config.targetPersonId) $tgPerCard = $card
-                if (id == config.fcPerId) $fPCard = $card
+                if (id == config.targetPersonId) {
+                    if (!asSpouse) $tgPerCard = $card
+                    else if (!$tgPerCard) $tgPerCard = $card
+                }
+                if (id == config.fcPerId) {
+                    if (!asSpouse) $fPCard = $card
+                    else if (!$fPCard) $fPCard = $card
+                }
 
                 $card.click(() => {
                     if (!isClickEvent()) return
@@ -1853,7 +1946,7 @@ function load(user) {
                         config.fcPerId = id
                         createTree()
                     }
-                    puViewP({id, callname, gender, birthday, deathday, avatar}, 0, pUViewPBsIdx, true)
+                    puViewP(person, 0, pUViewPBsIdx, true)
                 })
 
                 $card.find('.hoverShow').hide()
@@ -2145,13 +2238,13 @@ function load(user) {
                 if (drawPartner) {
                     if (person.spouse) {
                         $group.find('#'+id1).append(`<div style="width: ${props.hDis}px;"></div>`)
-                        let $spouseCard = genPCard(person.spouse)
+                        let $spouseCard = genPCard(person.spouse, true)
                         $group.find('#'+id1).append($spouseCard.attr('id', id4))
                     }
 
                     idsPartDiffSpouse.forEach(id => {
                         $group.find('#'+id1).append(`<div style="width: ${props.hDis}px;"></div>`)
-                        let $partnerCard = genPCard(gChrHasPnDiffSrc[id].partner)
+                        let $partnerCard = genPCard(gChrHasPnDiffSrc[id].partner, true)
                         let rdId = randomId()
                         prtToCardId[id] = rdId
                         $group.find('#'+id1).append($partnerCard.attr('id', rdId))
@@ -2676,7 +2769,81 @@ function load(user) {
     }
 
     function tabStatistic() {
+        let $tab = $('#t-stas')
 
+        api.statistic().then(({numMales, numFemales, ages}) => {
+            function genCardHtml(header, value, icon, bgColor) {
+                return ` <div class="card">
+                    <div class="card-body p-3 d-flex align-items-center">
+                        <div class="bg-primary text-white p-3 me-3" style="${bgColor ? `background-color: ${bgColor} !important;`: ''}">
+                            <svg class="icon icon-xl">
+                            <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-${icon}"></use>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="fs-6 fw-semibold text-primary">${value}</div>
+                            <div class="text-medium-emphasis text-uppercase fw-semibold small">${header}</div>
+                        </div>
+                    </div>
+                </div>`
+            }
+            
+            $tab.append(`<div class="row">
+                <div class="col-sm-6">${genCardHtml('Số lượng Nam', numMales, 'user')}</div>
+                <div class="col-sm-6">${genCardHtml('Số lượng Nữ', numFemales, 'user-female', '#ff3e80')}</div>
+            </div>
+            <canvas id="age-chart" style="margin-top: 4rem;"></canvas>`);
+
+            
+            (() => {
+                let countUAge = ages.reduce((prev, age) => prev + (age == -1 ? 1 : 0), 0)
+                let countZeroAge = ages.reduce((prev, age) => prev + (age == 0 ? 1 : 0), 0)
+                ages = ages.filter(age => age > 0)
+                let maxAges = Math.max(...ages)
+                let maxNumRange = 20
+                let mLenRange = 5
+                let rangeLength = maxAges/maxNumRange
+                rangeLength = Math.ceil(rangeLength/5)*5
+                rangeLength = Math.max(rangeLength, mLenRange)
+
+                let rangeLabels = ['Không rõ', 0]
+                let rangeCounts = [countUAge, countZeroAge]
+                ages.sort((a, b) => a - b)
+                let lastRangeEnd = 0
+                for (let i = 0; i < ages.length; i++) {
+                    let age = ages[i]
+                    while (age > lastRangeEnd) {
+                        rangeLabels.push(`${lastRangeEnd + 1} - ${lastRangeEnd + rangeLength}`)
+                        rangeCounts.push(0)
+                        lastRangeEnd = lastRangeEnd + rangeLength
+                    }
+                    rangeCounts[rangeCounts.length - 1]++
+                }
+
+                let data = {
+                    labels: rangeLabels,
+                    datasets: [{
+                        label: 'Số tuổi',
+                        data: rangeCounts,
+                        backgroundColor: 'rgba(70, 192, 192, 0.6)',
+                        borderColor: 'rgba(150, 100, 255, 1)',
+                        borderWidth: 1
+                    }]
+                }
+                let options = {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+                new Chart($('#age-chart')[0], {
+                    type: 'bar',
+                    data: data,
+                    options: options
+                })
+            })()
+        })
     }
 
     function tUCmEvts() {

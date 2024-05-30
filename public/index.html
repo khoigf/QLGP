@@ -130,11 +130,11 @@
           </script>
           
           <ul class="header-nav ms-3">
-            <li class="nav-item dropdown">
-              <a class="nav-link py-0" data-coreui-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                <div class="avatar avatar-md"><img class="avatar-img" src="./resources/default-avatar.jpg" alt="user@email.com"></div>
-              </a>
-            </li>
+            <button type="button" class="btn btn-primary" id="logout">
+              <svg class="icon">
+              <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-account-logout"></use>
+              </svg> Đăng xuất
+            </button>
           </ul>
         </div>
       </header>
@@ -142,8 +142,8 @@
       <div class="body flex-grow-1 px-3">
         <div class="container-lg">
           <div class="tab-content table-responsive" id="t-people-mng"></div>
-          <div class="tab-content table-responsive" id="t-stas"></div>
-          <div class="tab-content table-responsive" id="t-uCm-Evts"></div>
+          <div class="tab-content" id="t-stas"></div>
+          <div class="tab-content" id="t-uCm-Evts"></div>
         </div>
       </div>
 
@@ -180,5 +180,6 @@
     </script>
     <script src="./js/html2canvas.min.js"></script>
     <script src="./js/dom-to-image.min.js"></script>
+    <script src="./js/chart.js"></script>
   </body>
 </html>
