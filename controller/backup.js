@@ -215,7 +215,7 @@ async function restoreFamilyDataFromCSV(filePath, newUserId) {
                     personId = await insertPerson({
                         ownerUserId: newUserId,
                         searchString: searchString,
-                        isStandForUser: person.isStandForUser
+                        isStandForUser: ""
                     });
                     await insertFieldValue(personId,1,"callname",fields.callname);
                     await insertFieldValue(personId,2,"gender",fields.gender);
