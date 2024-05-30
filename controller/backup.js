@@ -169,11 +169,11 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         const columns = row.split(','); // Split each row into columns
         const personId = parseInt(columns[0]);
         const callname = columns[1].replace(/"/g, '');
-        const avatar = columns[2];
+        const avatar = columns[2].replace(/"/g, '');
         const birthday = columns[3].replace(/"/g, '');
         const deathday = columns[4].replace(/"/g, '');
         const gender = columns[5].replace(/"/g, '');
-        const isStandForUser = columns[6] ? parseInt(columns[6]) : null;
+        const isStandForUser = columns[6].replace(/"/g, '');
         const spouseId = columns[7] ? parseInt(columns[7]) : null;
         const spouseName = columns[8].replace(/"/g, '');
         const spouseAvatar = columns[9].replace(/"/g, '');
@@ -212,26 +212,88 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         console.log(person,fields,relatedPersons);
         let personId = await personExists(newUserId, searchString);
         console.log("PersonID : ", personId);
-        if (!personId) {
-            personId = await insertPerson({
-                ownerUserId: newUserId,
-                searchString: searchString,
-                isStandForUser: null
+        if (personId) {
+            const deletePersonQuery = `DELETE FROM person WHERE id = ?`;
+            const deleteFieldValuesQuery = `DELETE FROM fieldvalue WHERE personId = ?`;
+            const updateFieldValueQuery = `UPDATE fieldvalue SET value = NULL WHERE value = ? AND (fieldDefinitionCode = 'spouse' OR fieldDefinitionCode = 'father' OR fieldDefinitionCode = 'mother')`;
+        
+            database.query(deletePersonQuery, [personId], function (error, result) {
+                if (error) {
+                    console.log(error);
+                } else {
+                    database.query(deleteFieldValuesQuery, [personId], function (error, result) {
+                        if (error) {
+                            console.log(error);
+                        } else {
+                            database.query(updateFieldValueQuery, [personId], function (error, result) {
+                                if (error) {
+                                    console.log(error);
+                                }
+                            });
+                        }
+                    });
+                }
             });
-            await insertFieldValue(personId, 1, "callname", fields.callname);
-            await insertFieldValue(personId, 2, "gender", fields.gender);
-            if (relatedPersons.spouse.id) {
-                await insertFieldValue(personId, 3, "spouse", relatedPersons.spouse.id);
-            }
-            if (relatedPersons.father.id) {
-                await insertFieldValue(personId, 4, "father", relatedPersons.father.id);
-            }
-            if (relatedPersons.mother.id) {
-                await insertFieldValue(personId, 5, "mother", relatedPersons.mother.id);
-            }
-            await insertFieldValue(personId, 6, "birthday", fields.birthday);
-            await insertFieldValue(personId, 7, "deathday", fields.deathday);
-            await insertFieldValue(personId, 8, "avatar", fields.avatar);
+        }
+        let isStandForUser = null;
+        if(person.isStandForUser == 1){
+            isStandForUser = 1;
+        }
+        personId = await insertPerson({
+            ownerUserId: newUserId,
+            searchString: searchString,
+            isStandForUser: isStandForUser
+        });
+        await insertFieldValue(personId, 1, "callname", fields.callname);
+        await insertFieldValue(personId, 2, "gender", fields.gender);
+        if (!relatedPersons.spouse.id) {
+            await insertFieldValue(personId, 3, "spouse", relatedPersons.spouse.id);
+        }
+        if (!relatedPersons.father.id) {
+            await insertFieldValue(personId, 4, "father", relatedPersons.father.id);
+        }
+        if (!relatedPersons.mother.id) {
+            await insertFieldValue(personId, 5, "mother", relatedPersons.mother.id);
+        }
+        await insertFieldValue(personId, 6, "birthday", fields.birthday);
+        await insertFieldValue(personId, 7, "deathday", fields.deathday);
+        await insertFieldValue(personId, 8, "avatar", fields.avatar);
+    }
+    for (const entry of results) {
+        const person = entry.person;
+        const fields = entry.fields;
+        const relatedPersons = entry.relatedPersons;
+        const searchString = fields.callname + " " + fields.gender;
+        let personId = await personExists(newUserId, searchString);
+        if (relatedPersons.spouse.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.spouse.callname,newUserId]
+            );
+            await insertFieldValue(personId, 3, "spouse", rows.length > 0 ? rows[0].id : null);
+        }
+        if (relatedPersons.father.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.father.callname,newUserId]
+            );
+            await insertFieldValue(personId, 4, "father", rows.length > 0 ? rows[0].id : null);
+        }
+        if (relatedPersons.mother.id) {
+            const rows = await executeQuery(
+                `SELECT p.*
+                FROM person p
+                JOIN fieldvalue fv ON p.id = fv.personId
+                WHERE fv.fieldDefinitionId = ? AND fv.value = ? AND ownerUserId = ?`,
+                [1,relatedPersons.mother.callname,newUserId]
+            );
+            await insertFieldValue(personId, 5, "mother", rows.length > 0 ? rows[0].id : null);
         }
     }
     console.log('CSV file successfully processed');
