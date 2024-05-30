@@ -1331,17 +1331,23 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
         zIndex,
         script: ($popUp) => {
             let $editButton = null
+            let $downloadBtn = null
             $popUp.find('button').each((index, button) => {
                 let $button = $(button)
                 if ($button.find('svg').length != 0 && $button.html().includes('Chỉnh sửa thông tin')) {
                     $editButton = $button
                 }
+                if ($button.find('svg').length != 0 && $button.html().includes('Tải thông tin')) {
+                    $downloadBtn = $button
+                }
             })
             $editButton.hide()
+            $downloadBtn.hide()
 
             api.getPDeatilInf({id}).then(({id, father, mother, spouse, fieldValues, siblings, children}) => {
                 fVFull = [...fieldValues]
                 $editButton.show()
+                $downloadBtn.show()
 
                 fieldValues = fieldValues.filter(({fieldDefinitionCode, code}) => !code && !fieldDefinitionCode)
                 $popUp.find('.rel-pp tbody .loading').remove()
@@ -1427,6 +1433,21 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
             html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg> Chỉnh sửa thông tin',
             type: 'info',
             click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
+        }, {
+            html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-data-transfer-down"></use></svg> Tải thông tin',
+            type: 'success',
+            click: ($popUp) => {
+                domtoimage.toPng($popUp.find('.pop-up > .content')[0], { bgcolor: 'white',
+                    style: {
+                        height: 'unset'
+                    }
+                }).then((dataUrl) => {
+                    let link = document.createElement('a')
+                    link.href = dataUrl
+                    link.download = `Thông tin về ${callname}`
+                    link.click()
+                })
+            }
         }]
     })
 }
@@ -2053,7 +2074,8 @@ function load(user) {
                     <div class="children" id="${id2}"></div>
                 </div>`)
                 .css({
-                    padding: (props.hDis/2) + 'px',
+                    padding: `${props.vDis}px ${props.hDis/2}px 0`,
+                    'padding-bottom': '0',
                     width: 'max-content',
                     position: 'relative'
                 })
@@ -2063,8 +2085,7 @@ function load(user) {
                 })
                 $group.find('#'+id2).css({
                     display: 'flex',
-                    width: 'max-content',
-                    'margin-top': (props.vDis - props.hDis/2) + 'px'
+                    width: 'max-content'
                 })
 
                 let $card = genPCard(person).attr('id', id3)
@@ -2145,17 +2166,17 @@ function load(user) {
                             
                             lineHeight += lineWidth/2
                             let [a, b] = [x1 - x2, y1 - y2]
-                            x1 += (lineWidth/2)*a/(a**2 + b**2)
-                            y1 += (lineWidth/2)*b/(a**2 + b**2)
+                            x1 += (lineWidth/2)*a/Math.sqrt(a**2 + b**2)
+                            y1 += (lineWidth/2)*b/Math.sqrt(a**2 + b**2)
                         }
                         if (padding2) {
                             
                             lineHeight += lineWidth/2
                             let [a, b] = [x2 - x1, y2 - y1]
-                            x2 += (lineWidth/2)*a/(a**2 + b**2)
-                            y2 += (lineWidth/2)*b/(a**2 + b**2)
+                            x2 += (lineWidth/2)*a/Math.sqrt(a**2 + b**2)
+                            y2 += (lineWidth/2)*b/Math.sqrt(a**2 + b**2)
                         }
-            
+
                         let line = $('<div></div>').css({
                             height: lineWidth+'px',
                             width: lineHeight+'px',
@@ -2163,7 +2184,7 @@ function load(user) {
                             left: ((x1+x2)/2 - lineHeight/2)+'px',
                             top: ((y1+y2)/2 - lineWidth/2)+'px',
                             transform: `rotate(${Math.atan((y2-y1)/(x2-x1))*180/Math.PI}deg)`,
-                            'background-color': 'green',
+                            'background-color': 'black',
                         })
 
                         $group.append(line)
@@ -2198,7 +2219,9 @@ function load(user) {
                             horiLineY = ((pPos.top + pHeight) + getCCardStyle(chrCardId[0]).top)/2
                         }
 
-                        function drawConnLines(cardIds, x, y, reduceY = 0) {
+                        let hozRanges = [] 
+
+                        function drawConnLines(cardIds, x, y) {
                             if (cardIds.length == 0) return
 
                             let cardIdToInf = {}
@@ -2206,6 +2229,8 @@ function load(user) {
                                 cardIdToInf[cardId] = getCCardStyle(cardId)
                             })
                             let firstCardId = cardIds[0]
+
+                            let lastHozRange = hozRanges.length > 0 ? hozRanges[hozRanges.length - 1] : [-10e10, -10e10, false]
 
                             if (cardIds.length == 1) {
                                 let x2 = cardIdToInf[firstCardId].left + cardIdToInf[firstCardId].width/2
@@ -2215,9 +2240,23 @@ function load(user) {
                                     drawLine(x, y, x2, y2)
                                 }
                                 else {
+                                    let hozLineLeftToRight = (x < x2)
+                                    let reduceYLevel = 0
+                                    if ((hozLineLeftToRight && x <= lastHozRange[1]) || (!hozLineLeftToRight && x2 <= lastHozRange[1])) {
+                                        reduceYLevel = lastHozRange[2] + (hozLineLeftToRight ? 1 : -1)
+                                    }
+                                    let reduceY = 0
+                                    if (reduceYLevel > 0) {
+                                        reduceY = config.props.vDis/2 - config.props.vDis/2/(2**reduceYLevel)
+                                    } else if (reduceYLevel < 0) {
+                                        reduceY = - (config.props.vDis/2 - config.props.vDis/2/(2**(-reduceYLevel)))
+                                    }
+
                                     drawLine(x, y, x, horiLineY - reduceY, false, true)
-                                    drawLine(x2, horiLineY - reduceY, x, horiLineY - reduceY, true, true)
+                                    drawLine(x, horiLineY - reduceY, x2, horiLineY - reduceY, true, true)
                                     drawLine(x2, horiLineY - reduceY, x2, y2, true, false)
+
+                                    hozRanges.push(hozLineLeftToRight ? [x, x2, reduceYLevel] : [x2, x, reduceYLevel])
                                 }
                             }
                             else {
@@ -2225,22 +2264,37 @@ function load(user) {
                                 let lastCardId = cardIds[cardIds.length - 1]
                                 let horiLineX2 = cardIdToInf[lastCardId].left + cardIdToInf[lastCardId].width/2
 
+                                let minX = Math.min(horiLineX1, horiLineX2, x)
+                                let maxX = Math.max(horiLineX1, horiLineX2, x)
+
+                                let reduceYLevel = 0
+                                if (minX <= lastHozRange[1]) {
+                                    reduceYLevel = lastHozRange[2] + (x < horiLineX1 ? 1 : -1)
+                                }
+                                let reduceY = 0
+                                if (reduceYLevel > 0) {
+                                    reduceY = config.props.vDis/2 - config.props.vDis/2/(2**reduceYLevel)
+                                } else if (reduceYLevel < 0) {
+                                    reduceY = - (config.props.vDis/2 - config.props.vDis/2/(2**(-reduceYLevel)))
+                                }
+
                                 if (horiLineX1 <= x && x <= horiLineX2) {
-                                    drawLine(x, y, x, horiLineY, false, true)
+                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
                                 } else {
                                     drawLine(x, y, x, horiLineY - reduceY, false, true)
                                     drawLine(x, horiLineY - reduceY, (horiLineX1 + horiLineX2)/2, horiLineY - reduceY, true, true)
-                                    drawLine((horiLineX1 + horiLineX2)/2, horiLineY - reduceY, (horiLineX1 + horiLineX2)/2, horiLineY, true, false)
                                 }
-                                drawLine(horiLineX1, horiLineY, horiLineX2, horiLineY, true, true)
+                                drawLine(horiLineX1, horiLineY - reduceY, horiLineX2, horiLineY - reduceY, true, true)
 
                                 cardIds.forEach(cardId => {
                                     let vertLineX = cardIdToInf[cardId].left + cardIdToInf[cardId].width/2
-                                    let vertLineY1 = horiLineY
+                                    let vertLineY1 = horiLineY - reduceY
                                     let vertLineY2 = cardIdToInf[cardId].top
 
                                     drawLine(vertLineX, vertLineY1, vertLineX, vertLineY2, true, false)
                                 })
+
+                                hozRanges.push([minX, maxX, reduceYLevel])
                             }
                         }
 
@@ -2265,13 +2319,7 @@ function load(user) {
                             let y = pPos.top + pHeight/2
                             drawLine(x1, y, x2, y)
 
-                            let delta
-                            if (chrNotHaPCardId.length == 0) {
-                                delta = 0
-                            } else {
-                                delta = (idsPartDiffSpouse.length == 0) ? config.props.vDis/4 : config.props.vDis/6
-                            }
-                            drawConnLines(chrHasParSameSpouseCardId, (x1 + x2)/2, y, delta)
+                            drawConnLines(chrHasParSameSpouseCardId, (x1 + x2)/2, y)
                         }
 
                         
@@ -2289,13 +2337,7 @@ function load(user) {
                             drawLine(x1, y, x1, pPos.top, true, false)
                             drawLine(x2, y, x2, pPos.top, true, false)
 
-                            let delta
-                            if (chrNotHaPCardId.length == 0) {
-                                delta = (chrHasParSameSpouseCardId.length == 0) ? 0 : config.props.vDis/4
-                            } else {
-                                delta = (chrHasParSameSpouseCardId.length == 0) ? config.props.vDis/4 : config.props.vDis/3
-                            }
-                            drawConnLines(prtIdToCCardId[partnerId], x2 - partnerWidth/2 - config.props.hDis/2, y, delta)
+                            drawConnLines(prtIdToCCardId[partnerId], x2 - partnerWidth/2 - config.props.hDis/2, y)
                         })
                     })
                 }
@@ -2426,7 +2468,8 @@ function load(user) {
                 let $tree = genFGroup(ancestor)
                 $tree.css({
                     position: 'fixed',
-                    top: '200%'
+                    top: '200%',
+                    'padding-bottom': props.vDis + 'px'
                 })
                 $tab.append($tree)
                 setTimeout(() => drwLineCbs.forEach(f => f()), 100)
@@ -2454,6 +2497,23 @@ function load(user) {
                         $(genOpHtml('location-pin')).click(() => {
                             
                         }).hide(),
+                        $(genOpHtml('data-transfer-down')).click(() => {
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+
+                            domtoimage.toPng($tree[0], { bgcolor: 'white' }).then((dataUrl) => {
+                                let link = document.createElement('a')
+                                link.href = dataUrl
+                                let t = new Date()
+                                link.download = `BĐGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}`
+                                link.click()
+                            })
+                        }),
                         $(genOpHtml('settings')).click(() => {
                             let html = `
                                 <label class="form-label" style="margin-top: 1.5rem;">Thông tin hiển thị trên biểu đồ</label>

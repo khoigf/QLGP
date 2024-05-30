@@ -192,7 +192,7 @@ function bigPopUp(html, option) {
         hideClBtn: false,
         clByOtClick: false,
         clCb: null,
-        zIndex: 2
+        zIndex: 100000
     }
     if (option) {
         for (let key in option) {
