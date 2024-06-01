@@ -236,18 +236,6 @@ function puAddP(addScCb, { gender, target, asRole, targetGender } = {}) {
                     }
                     return result
                 })()),
-                gen$fInput({type: 'DATE', name: 'Ngày sinh', code: 'birthday'}),
-                gen$fInput({type: 'LUNAR_DATE', name: 'Ngày mất', code: 'deathday'}),
-                gen$fInput((() => {
-                    let result = {type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}
-                    if (asRole == 'spouse') {
-                        Object.assign(result, {
-                            value: target,
-                            disabled: true
-                        })
-                    }
-                    return result
-                })()),
                 gen$fInput((() => {
                     let result = {type: 'PERSON', name: 'Bố', code: 'father'}
                     if (asRole == 'child' && targetGender == 'Nam') {
@@ -268,7 +256,19 @@ function puAddP(addScCb, { gender, target, asRole, targetGender } = {}) {
                     }
                     return result
                 })()),
-                gen$fInput({type: 'IMAGE', name: 'Ảnh', code: 'avatar'})
+                gen$fInput((() => {
+                    let result = {type: 'PERSON', name: 'Vợ / Chồng', code: 'spouse'}
+                    if (asRole == 'spouse') {
+                        Object.assign(result, {
+                            value: target,
+                            disabled: true
+                        })
+                    }
+                    return result
+                })()),
+                gen$fInput({type: 'IMAGE', name: 'Ảnh', code: 'avatar'}),
+                gen$fInput({type: 'DATE', name: 'Ngày sinh', code: 'birthday'}),
+                gen$fInput({type: 'LUNAR_DATE', name: 'Ngày mất', code: 'deathday'})
             ]
             $from.append(fFacReturnVal.map(i => i[0]))
 
@@ -338,7 +338,7 @@ function puPickP(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, picke
                             top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0;" ${isMultiValue ? '' : `name="${rdName}"`} ${pickedIds.has(id) ? 'checked' : ''}></td>
                         <td style="width: 3em;">
                             <div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${avatar || defAvtUrl}">
+                                <img class="avatar-img my-img card-border" src="${avatar || defAvtUrl}">
                             </div>
                         </td>
                         <td><div>${callname}</div></td>
@@ -690,7 +690,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                         $element.find('.value-list ul').append($person)
 
                         function innerAddRmnEvts(avatar) {
-                            $person.prepend(`<img src="${avatar || defAvtUrl}" style="height: 100%; margin-right: 0.8rem;" class="my-img">`)
+                            $person.prepend(`<img src="${avatar || defAvtUrl}" style="height: 100%; margin-right: 0.8rem;" class="my-img card-border">`)
                             $person.append(
                                 $(`<svg class="icon" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer;">
                                     <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use>
@@ -817,7 +817,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
     else {
         switch (type) {
             case 'STRING':
-                $element = $(`<div class="col-12">
+                $element = $(`<div class="col-xl-5 col-lg-6 col-md-10">
                     <label for="${labelId}" class="form-label">${name}${code == 'callname' ? '<span style="color: red;"> *</span>' : ''}</label>
                     <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : ''} ${value ? `value="${value}"` : ''}>
                     <div class="invalid-feedback"></div>
@@ -838,7 +838,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 valueChanged = () => value != getValue()
                 break
             case 'DATE':
-                $element = $(`<div class="col-md-12">
+                $element = $(`<div class="col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : 'placeholder="Ngày dương lịch định dạng NGÀY/THÁNG/NĂM"'} ${value ? `value="${value}"` : ''}>
                     <div class="invalid-feedback"></div>
@@ -870,7 +870,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 break
             case 'LUNAR_DATE':
                 let id1 = randomId(), id2 = randomId(), rdName = randomId()
-                $element = $(`<div class="col-md-12">
+                $element = $(`<div class="col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <div class="row" style="margin: 0;">
                         <div class="form-check col-md-6">
@@ -966,13 +966,13 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 valueChanged = () => value != getValue()
                 break
             case 'PERSON':
-                $element = $(`<div class="col-md-6">
+                $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <div class="input-group" style="position: relative;">
                         <input type="text" class="form-control" value="Chọn..." readonly style="cursor: pointer;">
                         <button class="btn btn-outline-secondary" type="button" style="border-radius: var(--cui-btn-border-radius); border-top-left-radius: 0; border-bottom-left-radius: 0;" ${disabled ? 'disabled' : ''}>Chọn</button>
                         <div class="show-choosed-person" style="position: absolute; top: 0; bottom: 0; display: flex; align-items: center; z-index: 5;">
-                            <img src="" style="height: 100%; padding: 0.6rem; margin: 0 0.2rem;" class="my-img">
+                            <img src="" style="height: calc(100% - 1.2rem); margin: 0 0.8rem;" class="my-img card-border">
                             <div class="name"></div>
                         </div>
                     </div>
@@ -1021,7 +1021,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 valueChanged = () => value != getValue()
                 break
             case 'IMAGE':
-                $element = $(`<div class="col-12">
+                $element = $(`<div class="col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <div class="input-group mb-3">
                         <button class="btn btn-outline-secondary add-image" type="button">Tải ảnh lên</button>
@@ -1246,7 +1246,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
     let html = `
         <div class="row" style="margin-bottom: 3rem;">
             <div class="col-md-4" style="display: flex; justify-content: center; align-items: center;">
-                <img src="${avatar || defAvtUrl}" alt="" class="my-img" style="height: 12rem;">
+                <img src="${avatar || defAvtUrl}" alt="" class="my-img card-border" style="height: 12rem;">
             </div>
             <div class="col-md-8" style="display: flex; align-items: center;">
                 <div class="row">
@@ -1408,7 +1408,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                         let $element = $(`<tr style="cursor: pointer;" class="p-ref-wrap">
                             <td class="text-center">
                                 <div class="avatar avatar-md">
-                                    <img class="avatar-img my-img person-reference-img" src="${avatar || defAvtUrl}">
+                                    <img class="avatar-img my-img card-border person-reference-img" src="${avatar || defAvtUrl}">
                                 </div>
                             </td>
                             <td>
@@ -1541,7 +1541,7 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
 
                     let $person = $(`<li class="list-group-item p-ref-wrap" style="cursor: pointer;">
                         <div class="person" style="display: flex; align-items: center;">
-                            <img src="" class="my-img person-reference-image" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
+                            <img src="" class="my-img card-border person-reference-image" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
                             <div class="name p-ref-name" style="display: none;"></div>
                             <div class="loading">Đang tải...</div>
                         </div>
@@ -1646,7 +1646,7 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có người nào cả!</h6></li>' : ''}
                             ${value != '' ? `<li class="list-group-item person-wrap p-ref-wrap" style="cursor: pointer;">
                                 <div class="person" style="display: flex; align-items: center;">
-                                    <img src="" class="my-img person-reference-img" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
+                                    <img src="" class="my-img card-border person-reference-img" style="display: none; height: 2.5rem; margin-right: 1.25rem;">
                                     <div class="name p-ref-name" style="display: none;"></div>
                                     <div class="loading">Đang tải...</div>
                                 </div>
@@ -1758,7 +1758,7 @@ function load(user) {
                     let $person = $(`<tr class="align-middle" style="cursor: pointer;">
                         <td class="text-center">
                             <div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${avatar || defAvtUrl}">
+                                <img class="avatar-img my-img card-border" src="${avatar || defAvtUrl}">
                             </div>
                         </td>
                         <td>
@@ -1771,21 +1771,21 @@ function load(user) {
                             <div class="fw-semibold">${birthday || '-'}</div>
                         </td>
                         <td class="text-center">
-                            <div class="fw-semibold">${deathday || '-'}</div>
+                            <div class="fw-semibold">${deathday ? `${deathday} (ÂL)` : '-'}</div>
                         </td>
                         <td class="text-center">
                             ${spouse ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${spouse.avatar || defAvtUrl}">
+                                <img class="avatar-img my-img card-border" src="${spouse.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                         <td class="text-center">
                             ${father ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${father.avatar || defAvtUrl}">
+                                <img class="avatar-img my-img card-border" src="${father.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                         <td class="text-center">
                             ${mother ? `<div class="avatar avatar-md">
-                                <img class="avatar-img my-img" src="${mother.avatar || defAvtUrl}">
+                                <img class="avatar-img my-img card-border" src="${mother.avatar || defAvtUrl}">
                             </div>` : '-'}
                         </td>
                     </tr>`)
@@ -2255,6 +2255,8 @@ function load(user) {
                     function drawLine(x1, y1, x2, y2, padding1 = false, padding2 = false) {
                         let lineWidth = 8
                         let lineHeight = Math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+                        let lineBg = true ? 'black' : `rgb(${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)}, ${Math.floor(Math.random()*256)})`
+                        
                         if (padding1) {
                             
                             lineHeight += lineWidth/2
@@ -2277,7 +2279,7 @@ function load(user) {
                             left: ((x1+x2)/2 - lineHeight/2)+'px',
                             top: ((y1+y2)/2 - lineWidth/2)+'px',
                             transform: `rotate(${Math.atan((y2-y1)/(x2-x1))*180/Math.PI}deg)`,
-                            'background-color': 'black',
+                            'background-color': lineBg,
                         })
 
                         $group.append(line)
@@ -2345,9 +2347,9 @@ function load(user) {
                                         reduceY = - (config.props.vDis/2 - config.props.vDis/2/(2**(-reduceYLevel)))
                                     }
 
-                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
+                                    drawLine(x, y, x, horiLineY - reduceY, false, false)
                                     drawLine(x, horiLineY - reduceY, x2, horiLineY - reduceY, true, true)
-                                    drawLine(x2, horiLineY - reduceY, x2, y2, true, false)
+                                    drawLine(x2, horiLineY - reduceY, x2, y2, false, false)
 
                                     hozRanges.push(hozLineLeftToRight ? [x, x2, reduceYLevel] : [x2, x, reduceYLevel])
                                 }
@@ -2372,9 +2374,9 @@ function load(user) {
                                 }
 
                                 if (horiLineX1 <= x && x <= horiLineX2) {
-                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
+                                    drawLine(x, y, x, horiLineY - reduceY, false, false)
                                 } else {
-                                    drawLine(x, y, x, horiLineY - reduceY, false, true)
+                                    drawLine(x, y, x, horiLineY - reduceY, false, false)
                                     drawLine(x, horiLineY - reduceY, (horiLineX1 + horiLineX2)/2, horiLineY - reduceY, true, true)
                                 }
                                 drawLine(horiLineX1, horiLineY - reduceY, horiLineX2, horiLineY - reduceY, true, true)
@@ -2384,7 +2386,7 @@ function load(user) {
                                     let vertLineY1 = horiLineY - reduceY
                                     let vertLineY2 = cardIdToInf[cardId].top
 
-                                    drawLine(vertLineX, vertLineY1, vertLineX, vertLineY2, true, false)
+                                    drawLine(vertLineX, vertLineY1, vertLineX, vertLineY2, false, false)
                                 })
 
                                 hozRanges.push([minX, maxX, reduceYLevel])
@@ -2774,7 +2776,7 @@ function load(user) {
         api.statistic().then(({numMales, numFemales, ages}) => {
             ages = ages.map(a => (a || a === 0) ? a : -1)
             function genCardHtml(header, value, icon, bgColor) {
-                return ` <div class="card">
+                return `<div class="card">
                     <div class="card-body p-3 d-flex align-items-center">
                         <div class="bg-primary text-white p-3 me-3" style="${bgColor ? `background-color: ${bgColor} !important;`: ''}">
                             <svg class="icon icon-xl">
@@ -2793,7 +2795,10 @@ function load(user) {
                 <div class="col-sm-6">${genCardHtml('Số lượng Nam', numMales, 'user')}</div>
                 <div class="col-sm-6">${genCardHtml('Số lượng Nữ', numFemales, 'user-female', '#ff3e80')}</div>
             </div>
-            <canvas id="age-chart" style="margin-top: 4rem;"></canvas>`);
+            <div class="card" style="margin-top: 1.5rem;">
+                <div style="height: 1px;"></div>
+                <canvas id="age-chart" style="padding: 1rem;"></canvas>
+            </div>`);
 
             
             (() => {
@@ -2802,6 +2807,7 @@ function load(user) {
                 ages = ages.filter(age => age > 0)
                 let maxAges = Math.max(...ages)
                 let maxNumRange = 20
+                let minNumRange = 8
                 let mLenRange = 5
                 let rangeLength = maxAges/maxNumRange
                 rangeLength = Math.ceil(rangeLength/5)*5
@@ -2821,10 +2827,16 @@ function load(user) {
                     rangeCounts[rangeCounts.length - 1]++
                 }
 
+                while (rangeLabels.length < minNumRange) {
+                    rangeLabels.push(`${lastRangeEnd + 1} - ${lastRangeEnd + rangeLength}`)
+                    rangeCounts.push(0)
+                    lastRangeEnd = lastRangeEnd + rangeLength
+                }
+
                 let data = {
                     labels: rangeLabels,
                     datasets: [{
-                        label: 'Số tuổi',
+                        label: 'Số người có độ tuổi trong khoảng này',
                         data: rangeCounts,
                         backgroundColor: 'rgba(70, 192, 192, 0.6)',
                         borderColor: 'rgba(150, 100, 255, 1)',
@@ -2835,6 +2847,12 @@ function load(user) {
                     scales: {
                         y: {
                             beginAtZero: true
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Số tuổi'
+                            }
                         }
                     }
                 }
@@ -2915,8 +2933,8 @@ function load(user) {
                     lastDate = date
                 }
 
-                $tab.append(`<div style="display: flex; align-items: center; height: 4rem; background-color: white; margin-bottom: 1rem; border-radius: 0.4rem;">
-                    <img class="my-img" style="height: 100%; padding: 0.4rem; margin-right: 0.5rem;" src="${person.avatar || defAvtUrl}">
+                $tab.append(`<div style="display: flex; align-items: center; height: 4rem; background-color: white; margin-bottom: 1rem; border-radius: 0.4rem; padding: 0.5rem;">
+                    <img class="my-img card-border" style="height: 100%; margin-right: 0.5rem;" src="${person.avatar || defAvtUrl}">
                     <div>
                         ${type == 'birthday' ? 'Sinh nhật' : 'Ngày giỗ'} của <span class="fw-bolder">${person.callname}</span> (ngày ${type == 'birthday' ? 'sinh' : 'mất'}: ${type == 'birthday' ? originalDate : `${originalDate} âm lịch`})
                     </div>

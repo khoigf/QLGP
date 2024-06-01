@@ -103,7 +103,7 @@ async function getAllBaseInfo(uId) {
 async function insertPerson(person) {
     const { ownerUserId, searchString, isStandForUser } = person;
     const result = await executeQuery(
-        `INSERT INTO Person (ownerUserId, searchString, isStandForUser) VALUES (?, ?, ?)`,
+        `INSERT INTO person (ownerUserId, searchString, isStandForUser) VALUES (?, ?, ?)`,
         [ownerUserId, searchString, isStandForUser]
     );
     return result.insertId;
@@ -111,14 +111,14 @@ async function insertPerson(person) {
 
 async function insertFieldValue(personId, fieldDefinitionId, fieldDefinitionCode, value ) {
     await executeQuery(
-        `INSERT INTO FieldValue (personId, fieldDefinitionId, fieldDefinitionCode, value) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode, value) VALUES (?, ?, ?, ?)`,
         [personId, fieldDefinitionId, fieldDefinitionCode, value]
     );
 }
 
 async function personExists(ownerUserId, searchString) {
     const rows = await executeQuery(
-        `SELECT * FROM Person WHERE ownerUserId = ? AND searchString = ?`,
+        `SELECT * FROM person WHERE ownerUserId = ? AND searchString = ?`,
         [ownerUserId, searchString]
     );
     return rows.length > 0 ? rows[0].id : null;

@@ -8,6 +8,9 @@ img.my-img {
      object-fit: cover;
   aspect-ratio: 1;
 }
+img.my-img.card-border {
+  border: 1px solid rgba(0, 0, 21, 0.175);
+}
 
 .nav-link {
   cursor: pointer;
