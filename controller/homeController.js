@@ -175,7 +175,7 @@ const postRegister = (request, response, next) => {
                                             if (error) {
                                                 response.status(500).json({ message: error.message }); // Trả về thông báo lỗi cụ thể
                                             } else {
-                                                const query6 = `INSERT INTO UpcomingEventTargetInfo (userId, type, numGenerationsAbove, 
+                                                const query6 = `INSERT INTO upcomingeventtargetinfo (userId, type, numGenerationsAbove, 
                                                     numGenerationsBelow, includeEqualGeneration, specificPersonIds) VALUES (?, ?, ?, ?, ?, ?)`;
                                                 database.query(query6, [id, '0', null, null, null, null], function (error, data) {
                                                     if (error) {
