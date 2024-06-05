@@ -262,7 +262,11 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         }else{
             await insertFieldValue(personId, 7, "deathday",fields.deathday);
         }
-        await insertFieldValue(personId, 8, "avatar", fields.avatar);
+        if(fields.avatar==='null'){
+            await insertFieldValue(personId, 8, "avatar", null);
+        }else{
+            await insertFieldValue(personId, 8, "avatar", fields.avatar);
+        }
     }
     for (const entry of results) {
         const person = entry.person;
