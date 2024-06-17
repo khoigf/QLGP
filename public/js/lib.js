@@ -204,10 +204,11 @@ function bigPopUp(html, option) {
     let popupHtml = `<div class="pop-up-wrap">
         <div class="pop-up big-pop-up">
             <div class="content">${html}</div>
-            <div class="button-group-background"></div>
-            <div class="button-group">
-                ${option.buttons.map((button, i) => `<button class="adtn-button-${i} btn btn-${button.type || 'primary'}">${button.html}</button>`).join('')}
-                <button class="close btn btn-primary">Đóng</button>
+            <div class="button-group-background">
+                <div class="button-group">
+                    ${option.buttons.map((button, i) => `<button class="adtn-button-${i} btn btn-${button.type || 'primary'}">${button.html}</button>`).join('\n')}
+                    <button class="close btn btn-primary">Đóng</button>
+                </div>
             </div>
         </div>
     </div>`
@@ -216,20 +217,10 @@ function bigPopUp(html, option) {
     if (option.zIndex) {
         jPopUp.css('z-index', option.zIndex)
         jPopUp.find('.button-group-background').css('z-index', option.zIndex + 1)
-        jPopUp.find('.button-group').css('z-index', option.zIndex + 2)
     }
     if (option.clByOtClick) jPopUp.click(() => {jPopUp.remove(); option.clCb?.()})
     jPopUp.children().click(e => e.stopPropagation())
     jPopUp.find('button.close').click(() => {jPopUp.remove(); option.clCb?.()})
-    jPopUp.find('.button-group-background').css({
-        position: 'absolute',
-        bottom: '0',
-        left: 0,
-        right: 0,
-        height: '90px',
-        'background-color': '#f9fafa',
-        'border-top': '1px solid #c4c9d0'
-    })
 
     let rmedFromScr = false
 
@@ -285,8 +276,8 @@ function popUpConfirm(html, f) {
             }
         ],
         style: {
-            height: '300px',
-            width: '400px'
+            height: '320px',
+            width: '480px'
         }
     })
 }

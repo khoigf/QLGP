@@ -1,6 +1,6 @@
 
 const mulValDel = '###'
-const imgMaxSizes = 1*1000*1000 
+const imgMaxSizes = 100*1000 
 const pUViewPBsIdx = 100000
 const defAvtUrl = './resources/default-avatar.jpg'
 
@@ -224,7 +224,7 @@ function puAddP(addScCb, { gender, target, asRole, targetGender } = {}) {
     let fFacReturnVal = []
     bigPopUp('', {
         script: $popUp => {
-            let $from = $('<form class="row g-3"></form>')
+            let $from = $('<form class="row g-3" style="--cui-gutter-y: 3rem; --cui-gutter-x: 4rem;"></form>')
             fFacReturnVal = [
                 gen$fInput({type: 'STRING', name: 'Tên gọi', placeholder: 'Ví dụ: Ông Nguyễn Văn A', code: 'callname'}),
                 gen$fInput((() => {
@@ -345,6 +345,7 @@ function puPickP(callback, {isMultiValue, maleOnly, femaleOnly, exceptIds, picke
                     </tr>`)
 
                     $content.find('tbody').append($person)
+                    
                     list$persons.push($person)
 
                     searchString = searchString.toLowerCase()
@@ -817,7 +818,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
     else {
         switch (type) {
             case 'STRING':
-                $element = $(`<div class="col-xl-5 col-lg-6 col-md-10">
+                $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}${code == 'callname' ? '<span style="color: red;"> *</span>' : ''}</label>
                     <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : ''} ${value ? `value="${value}"` : ''}>
                     <div class="invalid-feedback"></div>
@@ -838,7 +839,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 valueChanged = () => value != getValue()
                 break
             case 'DATE':
-                $element = $(`<div class="col-lg-6 col-md-8">
+                $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : 'placeholder="Ngày dương lịch định dạng NGÀY/THÁNG/NĂM"'} ${value ? `value="${value}"` : ''}>
                     <div class="invalid-feedback"></div>
@@ -870,7 +871,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 break
             case 'LUNAR_DATE':
                 let id1 = randomId(), id2 = randomId(), rdName = randomId()
-                $element = $(`<div class="col-lg-6 col-md-8">
+                $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <div class="row" style="margin: 0;">
                         <div class="form-check col-md-6">
@@ -940,7 +941,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                     alertText = 'Nếu giới tính bị thay đổi, mối quan hệ (bố / mẹ) của con cái người này sẽ bị xóa!'
                 }
                 let id3 = randomId(), id4 = randomId(), rdName2 = randomId()
-                $element = $(`<div class="col-12">
+                $element = $(`<div class="col-lg-12 col-md-8">
                     <label for="${labelId}" class="form-label">${name} <span style="color: red;">*</span></label><br>
                     <h6 class="text-muted" style="margin-top: -0.5rem; margin-bottom: 1rem;">(${alertText})</h6>
                     <div class="form-check">
@@ -1021,7 +1022,7 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
                 valueChanged = () => value != getValue()
                 break
             case 'IMAGE':
-                $element = $(`<div class="col-lg-6 col-md-8">
+                $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}</label>
                     <div class="input-group mb-3">
                         <button class="btn btn-outline-secondary add-image" type="button">Tải ảnh lên</button>
@@ -1151,7 +1152,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
         script: $popUp => {
             fieldValues = makeCopy(fieldValues)
             fieldValues.find(({code}) => code == 'gender').type = 'GENDER'
-            let $from = $('<form class="row g-3"></form>')
+            let $from = $('<form class="row g-3" style="--cui-gutter-y: 3rem; --cui-gutter-x: 4rem;"></form>')
             fFacReturnVal = fieldValues.map(fV => gen$fInput(fV, udFieldDefCb))
             $from.append(fFacReturnVal.map(i => i[0]))
 
@@ -1244,11 +1245,11 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
     let {callname, gender, birthday, deathday, avatar, id, isStandForUser} = person
     let showedPId = id
     let html = `
-        <div class="row" style="margin-bottom: 3rem;">
-            <div class="col-md-4" style="display: flex; justify-content: center; align-items: center;">
-                <img src="${avatar || defAvtUrl}" alt="" class="my-img card-border" style="height: 12rem;">
+        <div class="row" style="margin-bottom: 3rem; box-sizing: content-box; overflow-x: hidden;">
+            <div class="row col-md-4" style="display: flex; justify-content: center; align-items: center; box-sizing: content-box;">
+                <img src="${avatar || defAvtUrl}" alt="" class="my-img card-border" style="height: 12rem; padding: 0; width: unset;">
             </div>
-            <div class="col-md-8" style="display: flex; align-items: center;">
+            <div class="row col-md-8" style="display: flex; align-items: center;">
                 <div class="row">
                     <div class="col-md-12">
                         <h1>${callname}</h1>
@@ -1260,28 +1261,30 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-4 col-md-5">
-                <table class="table border mb-0 rel-pp">
-                    <thead class="table-light fw-semibold">
-                        <tr class="align-middle">
-                            <th class="text-center">
-                            <svg class="icon">
-                                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
-                            </svg>
-                            </th>
-                            <th>Người thân</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="loading">
-                            <td></td>
-                            <td>Đang tải...</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="row" style="box-sizing: content-box; overflow-x: hidden;">
+            <div class="row col-xl-4 col-lg-6" style="box-sizing: content-box;">
+                <div style="padding: 0.7rem;">
+                    <table class="table border mb-0 rel-pp">
+                        <thead class="table-light fw-semibold">
+                            <tr class="align-middle">
+                                <th class="text-center">
+                                <svg class="icon">
+                                    <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-people"></use>
+                                </svg>
+                                </th>
+                                <th>Người thân</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="loading">
+                                <td></td>
+                                <td>Đang tải...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="row col-md-8 fields" style="margin: 0 -0.7rem;">
+            <div class="row col-xl-8 col-lg-6 fields" style="box-sizing: content-box; height: max-content;">
             
             </div>
         </div>
@@ -1335,6 +1338,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
     let $popUp = bigPopUp(html, {
         zIndex,
         script: ($popUp) => {
+            $popUp.find('.content').css('padding', '1.4rem')
             let $editButton = null
             let $downloadBtn = null
             let $deleteBtn = null
@@ -1406,7 +1410,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                         let {avatar, id, callname} = relPerson
 
                         let $element = $(`<tr style="cursor: pointer;" class="p-ref-wrap">
-                            <td class="text-center">
+                            <td class="text-center" style="vertical-align: middle;">
                                 <div class="avatar avatar-md">
                                     <img class="avatar-img my-img card-border person-reference-img" src="${avatar || defAvtUrl}">
                                 </div>
@@ -1443,7 +1447,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
         },
         buttons: [
             {
-                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use></svg> Xóa người thân',
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-trash"></use></svg><span> Xóa người thân</span>',
                 type: 'danger',
                 click: _$popUp => {
                     popUpConfirm('Bạn có chắc chắn muốn xóa người thân này không', () => {
@@ -1453,14 +1457,14 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                             rmLding()
                             $popUp.remove()
                             if (firstTime) $(document.body).removeClass('stScroll')
-                            udCbStack[udCbIdx]()
+                            udCbStack[udCbIdx](showedPId, [], true, false, false)
                             udCbStack.pop()
                         })
                     })
                 }
             },
             {
-                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-data-transfer-down"></use></svg> Tải thông tin',
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-data-transfer-down"></use></svg><span> Tải thông tin</span>',
                 type: 'success',
                 click: ($popUp) => {
                     domtoimage.toPng($popUp.find('.pop-up > .content')[0], { bgcolor: 'white',
@@ -1476,7 +1480,7 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                 }
             },
             {
-                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg> Chỉnh sửa thông tin',
+                html: '<svg class="icon me-2"><use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-pen-alt"></use></svg><span> Chỉnh sửa thông tin</span>',
                 type: 'info',
                 click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
             }
@@ -1494,8 +1498,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
     if (isMultiValue) {
         switch (type) {
             case 'STRING':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div style="padding: 0.7rem;" class="col-xl-6 col-lg-12 col-md-6">
+                    <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
@@ -1505,8 +1509,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'DATE':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div style="padding: 0.7rem;" class="col-xl-6 col-lg-12 col-md-6">
+                    <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
@@ -1516,8 +1520,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'LUNAR_DATE':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div style="padding: 0.7rem;" class="col-xl-6 col-lg-12 col-md-6">
+                    <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có giá trị nào!</h6></li>' : ''}
@@ -1527,8 +1531,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'PERSON':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div style="padding: 0.7rem;" class="col-xl-6 col-lg-12 col-md-6">
+                    <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có người nào cả!</h6></li>' : ''}
@@ -1569,8 +1573,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 })
                 break
             case 'IMAGE':
-                $element = $(`<div style="padding: 0.7rem; width: 100%;">
-                    <div class="card" style="width: 100%;">
+                $element = $(`<div style="padding: 0.7rem;" class="col-12">
+                    <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có ảnh nào cả!</h6></li>' : ''}
@@ -1583,7 +1587,7 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                         <div class="images row" style="margin: 0 -0.5rem;"></div>
                     </li>`)
                     value.split(mulValDel).forEach(src => {
-                        let $imgWrap = $(`<div style="padding: 0.5rem; width: max-content;">
+                        let $imgWrap = $(`<div style="padding: 0.5rem;">
                             <img src="${src}" style="max-height: 5rem; max-width: 10rem; object-fit: cover; cursor: pointer; border-radius: 0.375rem; border: 1px solid var(--cui-input-border-color, #b1b7c1); cursor: pointer;">
                         </div>`)
                         
@@ -1600,8 +1604,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
     else {
         switch (type) {
             case 'STRING':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">${name}</h5>
                             ${value == '' ?
@@ -1613,8 +1617,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'DATE':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">${name}</h5>
                             ${value == '' ?
@@ -1626,8 +1630,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'LUNAR_DATE':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">${name}</h5>
                             ${value == '' ?
@@ -1639,8 +1643,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 </div>`)
                 break
             case 'PERSON':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                    <div class="card">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
                             ${value == '' ? '<li class="list-group-item"><h6 class="text-muted">Không có người nào cả!</h6></li>' : ''}
@@ -1678,8 +1682,8 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
                 }
                 break
             case 'IMAGE':
-                $element = $(`<div style="padding: 0.7rem; width: max-content;">
-                    <div class="card" style="width: 18rem;">
+                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">${name}</h5>
                             ${value == '' ? `<h6 class="card-subtitle mb-2 text-muted">Không có ảnh</h6>` : ''}
@@ -1693,6 +1697,11 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
     }
 
     return $element
+}
+
+function headLog(m, append = false) {
+    let $con = $('#main > header > div #headLog')
+    $con.text(m)
 }
 
 function load(user) {
@@ -1874,7 +1883,6 @@ function load(user) {
                 hasRelShip: false
             },
             targetPersonId: null,
-            fcPerId: null,
             props: {
                 default: {
                     height: 180,
@@ -1888,6 +1896,7 @@ function load(user) {
                 vDis: 120
             }
         }
+        let lastViewStatus = {}
 
         let bakAncestor = null
 
@@ -1905,10 +1914,12 @@ function load(user) {
             function genPCard(person, asSpouse = false) {
                 let {id, callname, gender, birthday, deathday, father, mother, spouse, avatar, isStandForUser} = person
 
-                let $card = $(`<div class="card" style="height: ${props.height}px; width: ${props.width}px; position: relative;">
+                let $card = $(`<div class="card ${config.layout.minWidth ? 'vert-card' : ''}" style="height: ${props.height}px; width: ${props.width}px; position: relative;">
                     <div class="row g-0" style="height: 100%;">
                         ${config.show.image ? `<div class="col-${config.layout.minWidth ? 12 : 4}" style="height: ${config.layout.minWidth ? 50 : 100}%;">
-                            <img src="${avatar || defAvtUrl}" class="img-fluid rounded-start" style="object-fit: cover; height: 100%; width: 100%;">
+                            <img src="${avatar || defAvtUrl}" class="img-fluid rounded-start" style="object-fit: cover; height: 100%; width: 100%; border-radius: 0 !important;
+                            border-top-left-radius: 0.375rem !important; ${config.layout.minWidth ? 'border-top-right-radius: 0.375rem !important;' :
+                            'border-bottom-left-radius: 0.375rem !important;'}">
                         </div>` : ''}
 
                         ${(config.show.name || config.show.gender || config.show.birthday || config.show.deathday) ? `<div class="col-${config.layout.minWidth ? 12 : 8}">
@@ -1934,30 +1945,67 @@ function load(user) {
                     if (!asSpouse) $tgPerCard = $card
                     else if (!$tgPerCard) $tgPerCard = $card
                 }
-                if (id == config.fcPerId) {
+                if (id == lastViewStatus.fcPerId) {
                     if (!asSpouse) $fPCard = $card
                     else if (!$fPCard) $fPCard = $card
                 }
 
-                $card.click(() => {
-                    if (!isClickEvent()) return
-                    udCbStack[0] = () => {
-                        $('#t-fmTree').html('')
-                        config.fcPerId = id
-                        createTree()
-                    }
-                    puViewP(person, 0, pUViewPBsIdx, true)
-                })
+                if (isMobile) {
+                    let $show = $(`<button type="button" class="btn btn-primary btn-sm hoverShow" style="z-index: 3; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">Xem chi tiết</button>`)
+                    $show.click(e => {
+                        e.stopPropagation()
+                        udCbStack[0] = () => {
+                            $('#t-fmTree').html('')
+                            lastViewStatus.fcPerId = id
+                            createTree()
+                        }
+                        puViewP(person, 0, pUViewPBsIdx, true)
+                    })
+                    $card.append($show)
+                    $card.append('<div class="hoverShow" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; background-color: white; opacity: 0.5;"></div>')
+
+                    $card.click(() => {
+                        if (!isClickEvent()) return
+                        let isShowing = $card.find('.hoverShow').hasClass('cpp-ops')
+                        
+                        if (isShowing) {
+                            $card.find('.hoverShow').hide().removeClass('cpp-ops')
+                        }
+                        else {
+                            $('.hoverShow').hide().removeClass('cpp-ops')
+                            $card.find('.hoverShow').show().addClass('cpp-ops')
+                        }
+                    })
+                }
+                else {
+                    $card.click(() => {
+                        if (!isClickEvent()) return
+                        udCbStack[0] = () => {
+                            $('#t-fmTree').html('')
+                            lastViewStatus.fcPerId = id
+                            createTree()
+                        }
+                        puViewP(person, 0, pUViewPBsIdx, true)
+                    })
+
+                    $card.mouseover(() => $card.css('cursor', 'pointer').find('.hoverShow').show())
+                    $card.mouseleave(() => $card.css('cursor', 'unset').find('.hoverShow').hide())
+                }
 
                 $card.find('.hoverShow').hide()
-                $card.mouseover(() => $card.find('.hoverShow').show())
-                $card.mouseleave(() => $card.find('.hoverShow').hide())
 
                 let tempHtml = `
                     <h3>Bạn muốn thêm <span style="color: #2eb85c;">ROLE</span> cho <span style="color: #2eb85c;">${callname}</span> bằng cách nào?</h3>
                     <div style="margin-top: 40px;" id="from-list"><button type="button" class="btn btn-primary">Chọn từ danh sách</button></div>
                     <div style="margin-top: 20px;" id="create-new"><button type="button" class="btn btn-primary">Tạo một người mới</button></div>
                 `
+
+                function addonCb() {
+                    $('#t-fmTree').html('')
+                    lastViewStatus.fcPerId = id
+                    lastViewStatus.scale = getZoom()
+                    createTree()
+                }
 
                 $card.find('button.add-father').click((e) => {
                     e.stopPropagation()
@@ -1978,9 +2026,7 @@ function load(user) {
                                         }]
                                     }).then(() => {
                                         rmLding()
-                                        $('#t-fmTree').html('')
-                                        config.fcPerId = id
-                                        createTree()
+                                        addonCb()
                                     })
                                 }, {
                                     maleOnly: true,
@@ -1991,9 +2037,7 @@ function load(user) {
                             $popUp.find('#create-new').click(() => {
                                 puAddP(() => {
                                     $popUp.remove()
-                                    $('#t-fmTree').html('')
-                                    config.fcPerId = id
-                                    createTree()
+                                    addonCb()
                                 }, {
                                     gender: 'Nam',
                                     target: id,
@@ -2027,9 +2071,7 @@ function load(user) {
                                         }]
                                     }).then(() => {
                                         rmLding()
-                                        $('#t-fmTree').html('')
-                                        config.fcPerId = id
-                                        createTree()
+                                        addonCb()
                                     })
                                 }, {
                                     femaleOnly: true,
@@ -2040,9 +2082,7 @@ function load(user) {
                             $popUp.find('#create-new').click(() => {
                                 puAddP(() => {
                                     $popUp.remove()
-                                    $('#t-fmTree').html('')
-                                    config.fcPerId = id
-                                    createTree()
+                                    addonCb()
                                 }, {
                                     gender: 'Nữ',
                                     target: id,
@@ -2076,9 +2116,7 @@ function load(user) {
                                         }]
                                     }).then(() => {
                                         rmLding()
-                                        $('#t-fmTree').html('')
-                                        config.fcPerId = id
-                                        createTree()
+                                        addonCb()
                                     })
                                 }, {
                                     exceptIds: [id]
@@ -2088,9 +2126,7 @@ function load(user) {
                             $popUp.find('#create-new').click(() => {
                                 puAddP(() => {
                                     $popUp.remove()
-                                    $('#t-fmTree').html('')
-                                    config.fcPerId = id
-                                    createTree()
+                                    addonCb()
                                 }, {
                                     target: id,
                                     asRole: 'spouse'
@@ -2123,9 +2159,7 @@ function load(user) {
                                         }]
                                     }).then(() => {
                                         rmLding()
-                                        $('#t-fmTree').html('')
-                                        config.fcPerId = id
-                                        createTree()
+                                        addonCb()
                                     })
                                 }, {
                                     exceptIds: [id]
@@ -2135,9 +2169,7 @@ function load(user) {
                             $popUp.find('#create-new').click(() => {
                                 puAddP(() => {
                                     $popUp.remove()
-                                    $('#t-fmTree').html('')
-                                    config.fcPerId = id
-                                    createTree()
+                                    addonCb()
                                 }, {
                                     target: id,
                                     asRole: 'child',
@@ -2441,7 +2473,10 @@ function load(user) {
             }
 
             
-            let [moveToCard, isClickEvent] = (() => {
+            let isMobile = false;
+            (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) isMobile = true;})(navigator.userAgent||navigator.vendor||window.opera);
+            
+            function zAccGenearatorPC() {
                 let scale = 1,
                 panning = false,
                 pointX = 0,
@@ -2498,11 +2533,11 @@ function load(user) {
                     setTransform()
                 }
 
-                let moveToCard = ($card, duration = 0, end) => {
+                let moveToCard = ($card, speed = 0, end) => {
                     if (!$card) return
 
-                    let height = $card.outerHeight()
-                    let width = $card.outerWidth()
+                    let height = $card.outerHeight()*scale
+                    let width = $card.outerWidth()*scale
                     let documentHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
                     let documentWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
                     let mainPaddLeft = parseInt($('#main').css('padding-left').replace('px', ''))
@@ -2515,25 +2550,34 @@ function load(user) {
 
                     let realOffset = $card.offset()
 
-                    if (duration <= 0) {
-                        pointX = targetOffset.left - realOffset.left
-                        pointY = targetOffset.top - realOffset.top
+                    if (speed <= 0) {
+                        pointX = targetOffset.left - realOffset.left + pointX
+                        pointY = targetOffset.top - realOffset.top + pointY
                         setTransform()
                         if (end) end()
                         return
                     }
 
+                    let distance = Math.sqrt((targetOffset.left - realOffset.left)**2 + (targetOffset.top - realOffset.top)**2)
+                    let duration = distance/(scale >= 1 ? scale : Math.sqrt(scale))/speed
+                    if (duration < 200) {
+                        duration = 800*Math.pow(duration/800, 1/6)
+                    } else if (duration < 800) {
+                        duration = 800*Math.pow(duration/800, 1/16)
+                    }
+
                     $tab.animate({
-                        left: `+=${targetOffset.left - realOffset.left - pointX}px`,
-                        top: `+=${targetOffset.top - realOffset.top - pointY}px`
+                        left: `+=${targetOffset.left - realOffset.left}px`,
+                        top: `+=${targetOffset.top - realOffset.top}px`
                     }, duration, () => {
-                        pointX = targetOffset.left - realOffset.left
-                        pointY = targetOffset.top - realOffset.top
+                        pointX = targetOffset.left - realOffset.left + pointX
+                        pointY = targetOffset.top - realOffset.top + pointY
                         setTransform()
                         $tab.css({
                             left: 0,
                             top: 0
                         })
+                        if (end) end()
                     })
                 }
 
@@ -2542,8 +2586,137 @@ function load(user) {
                     return Math.abs(xMouUp - xBfMouDown) < delta && Math.abs(yMouUp - yBfMouDown) < delta
                 }
 
-                return [moveToCard, isClickEvent]
-            })()
+                let getZoom = () => scale
+
+                let setZoom = z => {
+                    scale = z
+                    setTransform()
+                }
+
+                return [moveToCard, isClickEvent, setZoom, getZoom]
+            }
+            function zAccGenearatorMb() {
+                
+                let $div = $('<div></div>')
+                $tab.parent().css('overflow', 'scroll').css({
+                    display: 'flex',
+                    'justify-content': 'center',
+                    'align-items': 'center'
+                })
+
+                let $divWrap = $($tab.parent()[0])
+                $tab = $($tab[0])
+                $tab.css({
+                    width: 'max-content',
+                    height: 'max-content',
+                    position: 'relative'
+                })
+                $divWrap.append($div)
+                $div.append($tab)
+
+                let scale = 1
+
+                function rsWrapProps() {
+                    let newHeight = $tab.outerHeight()*scale
+                    let newWidth = $tab.outerWidth()*scale
+                    $div.css('height', newHeight + 'px')
+                    $div.css('width', newWidth + 'px')
+
+                    $divWrap.css('align-items', (newHeight < $divWrap.outerHeight()) ? 'center' : 'unset')
+                    $divWrap.css('justify-content', (newWidth < $divWrap.outerWidth()) ? 'center' : 'unset')
+                    $divWrap.css('border-top', `${$('#header').outerHeight()}px solid transparent`)
+                }
+
+                let _move = (targetOffset, realOffset, speed, end) => {
+                    let tabOffset = $tab.offset()
+
+                    let tgScrLeft = realOffset.left - tabOffset.left - targetOffset.left
+                    let tgScrTop = realOffset.top - tabOffset.top - targetOffset.top + props.vDis/2
+
+                    if (speed <= 0) {
+                        $divWrap.scrollLeft(tgScrLeft)
+                        $divWrap.scrollTop(tgScrTop)
+                        if (end) end()
+                        return
+                    }
+
+                    let rScrLeft = $divWrap.scrollLeft()
+                    let rScrTop = $divWrap.scrollTop()
+                    let distance = Math.sqrt((rScrLeft - tgScrLeft)**2 + (rScrTop - tgScrTop)**2)
+                    let duration = distance/(scale >= 1 ? scale : Math.sqrt(scale))/speed
+                    if (duration < 200) {
+                        duration = 800*Math.pow(duration/800, 1/6)
+                    } else if (duration < 800) {
+                        duration = 800*Math.pow(duration/800, 1/16)
+                    }
+
+                    $divWrap.animate({
+                        scrollLeft: `${tgScrLeft}px`,
+                        scrollTop: `${tgScrTop}px`
+                    }, duration, () => {
+                        if (end) end()
+                    })
+
+                    return
+                }
+
+                let moveToCard = ($card, speed = 0, end) => {
+                    if (!$card) return
+
+                    let height = $card.outerHeight()*scale
+                    let width = $card.outerWidth()*scale
+                    let documentHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+                    let documentWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+                    let mainPaddLeft = parseInt($('#main').css('padding-left').replace('px', ''))
+                    if (isNaN(mainPaddLeft)) mainPaddLeft = isMobile ? 0 : 256
+                    
+                    let targetOffset = {
+                        top: $('#header').outerHeight() + (documentHeight - $('#header').outerHeight())/2 - height/2,
+                        left: mainPaddLeft + (documentWidth - mainPaddLeft)/2 - width/2
+                    }
+                    let realOffset = $card.offset()
+                    
+                    _move(targetOffset, realOffset, speed, end)
+                }
+
+                let isClickEvent = () => true
+
+                let getZoom = () => scale
+
+                let setZoom = z => {
+                    let tabOffset = $tab.offset()
+                    let documentHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+                    let documentWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+                    let mainPaddLeft = parseInt($('#main').css('padding-left').replace('px', ''))
+                    if (isNaN(mainPaddLeft)) mainPaddLeft = isMobile ? 0 : 256
+                    let scrMid = {
+                        top: $('#header').outerHeight() + (documentHeight - $('#header').outerHeight())/2,
+                        left: mainPaddLeft + (documentWidth - mainPaddLeft)/2
+                    }
+
+                    let $markedPoint = $('<div></div>').css({
+                        height: '10px',
+                        width: '10px',
+                        position: 'absolute',
+                        top: `${Math.abs(tabOffset.top/scale) + scrMid.top/scale - 5}px`,
+                        left: `${Math.abs(tabOffset.left/scale) + scrMid.left/scale - 5}px`,
+                        opacity: 0
+                        
+                    })
+
+                    $tab.append($markedPoint)
+
+                    scale = z
+                    $tab.css('transform', `scale(${scale})`)
+                    rsWrapProps()
+
+                    moveToCard($markedPoint)
+                    $markedPoint.remove()
+                }
+
+                return [moveToCard, isClickEvent, setZoom, getZoom]
+            }
+            let [moveToCard, isClickEvent, setZoom, getZoom] = (isMobile ? zAccGenearatorMb : zAccGenearatorPC)()
 
             if (bakAncestor) {
                 drawTree({
@@ -2567,14 +2740,34 @@ function load(user) {
                     'padding-bottom': props.vDis + 'px'
                 })
                 $tab.append($tree)
-                setTimeout(() => drwLineCbs.forEach(f => f()), 100)
-                setTimeout(() => {
-                    $tree.css({
-                        position: 'unset',
-                        top: 'unset'
-                    })
-                    moveToCard($fPCard || $tgPerCard)
-                }, 200)
+
+                let prevScale = 1
+                let drLineInter = setInterval(() => {
+                    if ($tree.height() != 0) {
+                        clearInterval(drLineInter)
+                        
+                        drwLineCbs.forEach(f => f())
+                        $tree.css({
+                            position: 'unset',
+                            top: 'unset'
+                        })
+                        if (lastViewStatus.scale) {
+                            let bound = 0.5
+                            if (lastViewStatus.scale > bound) {
+                                prevScale = Math.max(lastViewStatus.scale/1.5, bound)
+                            } else {
+                                prevScale = lastViewStatus.scale
+                            }
+                            setZoom(prevScale)
+                        } else {
+                            if (isMobile) {
+                                prevScale = 0.5
+                                setZoom(0.5) 
+                            }
+                        }
+                        moveToCard($fPCard || $tgPerCard)
+                    }
+                }, 1)
 
                 function genOpHtml(type) {
                     return `<div style="height: 3rem; width: 3rem; padding: 0.6rem; margin-left: 0.5rem; border-radius: 0.5rem; background-color: white; border: 1px solid rgba(0, 0, 21, 0.175); cursor: pointer;">
@@ -2586,22 +2779,23 @@ function load(user) {
 
                 $tab.parent().append(
                     $('<div style="position: fixed; bottom: 1rem; right: 1rem; display: flex;"></div>').append(
-                        $(genOpHtml('zoom-in')).click(() => {
-                            
-                        }).hide(),
-                        $(genOpHtml('location-pin')).click(() => {
-                            
-                        }).hide(),
+                        isMobile ? $(genOpHtml('zoom-out')).click(() => {
+                            prevScale = Math.max(0.01, prevScale/1.2)
+                            setZoom(prevScale)
+                        }) : null,
+                        isMobile ? $(genOpHtml('zoom-in')).click(() => {
+                            prevScale = Math.min(3, prevScale*1.2)
+                            setZoom(prevScale)
+                        }) : null,
+                        $(genOpHtml('location-pin')).click(function () {
+                            if ($(this).attr('disabled')) return
+                            $(this).attr('disabled', true)
+                            moveToCard($tgPerCard, 20, () => {
+                                $(this).attr('disabled', false)
+                            })
+                        }),
                         $(genOpHtml('data-transfer-down')).click(() => {
-                            
-                            
-                            
-                            
-                            
-                            
-                            
-
-                            domtoimage.toPng($tree[0], { bgcolor: 'white' }).then((dataUrl) => {
+                            domtoimage.toPng($tree[0], { bgcolor: 'rgb(235, 237, 239)' }).then((dataUrl) => {
                                 let link = document.createElement('a')
                                 link.href = dataUrl
                                 let t = new Date()
@@ -2748,11 +2942,11 @@ function load(user) {
                                             $('#t-fmTree').html('')
                                             if (tgPIdFromInp != targetPersonId || oldTgP != nTgP) {
                                                 config.targetPersonId = tgPIdFromInp
-                                                config.fcPerId = null
+                                                lastViewStatus.fcPerId = null
                                                 createTree()
                                             } else {
                                                 bakAncestor = ancestor
-                                                config.fcPerId = null
+                                                lastViewStatus.fcPerId = null
                                                 createTree()
                                             }
 
@@ -2902,20 +3096,48 @@ function load(user) {
             }
             personInfos.forEach(person => {
                 if (person.birthday && person.birthday != '') {
-                    events.push({
-                        type: 'birthday',
-                        originalDate: person.birthday,
-                        date: dateTransfer(person.birthday, false),
-                        person
-                    })
+                    let deltaDay = deltaDaysNow(person.birthday)
+                    dateTransfer(person.birthday) 
+
+                    if (deltaDay == 0) {
+                        events.push({
+                            type: 'ngaysinh',
+                            originalDate: person.birthday,
+                            date: person.birthday,
+                            person
+                        })
+                    }
+                    
+                    if (deltaDay < 0) {
+                        events.push({
+                            type: 'sinhnhat',
+                            originalDate: person.birthday,
+                            date: dateTransfer(person.birthday, false),
+                            person
+                        })
+                    }
                 }
                 if (person.deathday && person.deathday != '') {
-                    events.push({
-                        type: 'deathday',
-                        originalDate: person.deathday,
-                        date: dateTransfer(person.deathday, true),
-                        person
-                    })
+                    let deltaDay = deltaDaysNow(DateLib.lDateToDate(person.deathday))
+                    dateTransfer(person.deathday) 
+
+                    if (deltaDay == 0) {
+                        events.push({
+                            type: 'ngaymat',
+                            originalDate: person.deathday,
+                            date: DateLib.lDateToDate(person.deathday),
+                            person
+                        })
+                    }
+
+                    if (deltaDay < 0) {
+                        events.push({
+                            type: 'ngaygio',
+                            originalDate: person.deathday,
+                            date: dateTransfer(person.deathday, true),
+                            person
+                        })
+                    }
                 }
             })
             events.sort((e1, e2) => score[e1.date] - score[e2.date])
@@ -2933,10 +3155,31 @@ function load(user) {
                     lastDate = date
                 }
 
+                let typeString = 'Ngày gì đó'
+                let evtStrSubfix = ''
+                switch (type) {
+                    case 'ngaysinh':
+                        typeString = 'Ngày sinh'
+                        evtStrSubfix = ''
+                        break
+                    case 'sinhnhat':
+                        typeString = 'Sinh nhật'
+                        evtStrSubfix = `(ngày sinh: ${originalDate})`
+                        break
+                    case 'ngaymat':
+                        typeString = 'Ngày mất'
+                        evtStrSubfix = ''
+                        break
+                    case 'ngaygio':
+                        typeString = 'Ngày giỗ'
+                        evtStrSubfix = `(ngày mất: ${originalDate} âm lịch)`
+                        break
+                }
+
                 $tab.append(`<div style="display: flex; align-items: center; height: 4rem; background-color: white; margin-bottom: 1rem; border-radius: 0.4rem; padding: 0.5rem;">
                     <img class="my-img card-border" style="height: 100%; margin-right: 0.5rem;" src="${person.avatar || defAvtUrl}">
                     <div>
-                        ${type == 'birthday' ? 'Sinh nhật' : 'Ngày giỗ'} của <span class="fw-bolder">${person.callname}</span> (ngày ${type == 'birthday' ? 'sinh' : 'mất'}: ${type == 'birthday' ? originalDate : `${originalDate} âm lịch`})
+                        ${typeString} của <span class="fw-bolder">${person.callname}</span> ${evtStrSubfix}
                     </div>
                 </div>`)
             })
