@@ -13,9 +13,9 @@ services:
       dockerfile_inline: |
         FROM node:alpine
         WORKDIR /app
-        COPY ./QLGP/package.json .
+        COPY ./package.json .
         RUN npm install
-        COPY ./QLGP .
+        COPY . .
         CMD ["npm", "start"]
     ports:
       - "8081:8080"
