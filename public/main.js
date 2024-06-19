@@ -1456,7 +1456,9 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false, toSa
                 })
 
                 if (toSaveAsPdf) {
-                    let $elem = $popUp.find('.pop-up > .content')
+                    let $elem = $popUp.find('.pop-up > .content').css({
+                        'overflow-y': 'unset'
+                    })
 
                     domtoimage.toPng($elem[0], { bgcolor: 'white',
                         style: {
