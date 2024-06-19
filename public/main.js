@@ -1153,7 +1153,10 @@ function puEditP(fieldValues, personId, udSuccCb) {
             fieldValues = makeCopy(fieldValues)
             fieldValues.find(({code}) => code == 'gender').type = 'GENDER'
             let $from = $('<form class="row g-3" style="--cui-gutter-y: 3rem; --cui-gutter-x: 4rem;"></form>')
-            fFacReturnVal = fieldValues.map(fV => gen$fInput(fV, udFieldDefCb))
+            fFacReturnVal = fieldValues.map(fV => {
+                fV.personId = personId
+                return gen$fInput(fV, udFieldDefCb)
+            })
             $from.append(fFacReturnVal.map(i => i[0]))
 
             let $addField = $(`<div class="col-12" style="margin-top: 5rem;">
@@ -1241,7 +1244,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
 }
 
 let udCbStack = []
-function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
+function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false, toSaveAsPdf = false) {
     let {callname, gender, birthday, deathday, avatar, id, isStandForUser} = person
     let showedPId = id
     let html = `
@@ -1290,49 +1293,53 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
         </div>
     `
 
-    udCbStack[udCbIdx + 1] = function innerUdCb(personId, fVChanged, udRelShip, udPHasNewField = false, allPPHasNewField = false) {
-        
-        
-        
-        
-        
-
-        udCbStack[udCbIdx](personId, fVChanged, udRelShip, false, allPPHasNewField)
-
-        
-        if (udPHasNewField || allPPHasNewField || udRelShip || (personId == showedPId)) {
-            $popUp.remove()
-            udCbStack[udCbIdx + 1] = null
-
-            let nPuClosed = false
-            bigPopUp('', {
-                zIndex,
-                script: ($popUp, _, rmCb) => {
-                    api.getPBsInf({id: showedPId}).then(person => {
-                        if (nPuClosed) return
-                        $popUp.remove()
-                        rmCb()
-                        puViewP(person, udCbIdx, zIndex, firstTime)
-                    })
-                },
-                clCb: () => {
-                    if (firstTime) $(document.body).removeClass('stScroll')
-                    udCbStack.pop()
-                }
+    if (!toSaveAsPdf) {
+        udCbStack[udCbIdx + 1] = function innerUdCb(personId, fVChanged, udRelShip, udPHasNewField = false, allPPHasNewField = false) {
+            
+            
+            
+            
+            
+    
+            udCbStack[udCbIdx](personId, fVChanged, udRelShip, false, allPPHasNewField)
+    
+            
+            if (udPHasNewField || allPPHasNewField || udRelShip || (personId == showedPId)) {
+                $popUp.remove()
+                udCbStack[udCbIdx + 1] = null
+    
+                let nPuClosed = false
+                bigPopUp('', {
+                    zIndex,
+                    script: ($popUp, _, rmCb) => {
+                        api.getPBsInf({id: showedPId}).then(person => {
+                            if (nPuClosed) return
+                            $popUp.remove()
+                            rmCb()
+                            puViewP(person, udCbIdx, zIndex, firstTime)
+                        })
+                    },
+                    clCb: () => {
+                        if (firstTime) $(document.body).removeClass('stScroll')
+                        udCbStack.pop()
+                    }
+                })
+    
+                return
+            }
+    
+            let newPerson = {id: personId}
+            fVChanged.forEach(({code, value}) => {
+                newPerson[code] = value
             })
-
-            return
+    
+            $popUp.find('.p-ref-wrap').each((index, elem) => {
+                elem.udCb(newPerson)
+            })
         }
-
-        let newPerson = {id: personId}
-        fVChanged.forEach(({code, value}) => {
-            newPerson[code] = value
-        })
-
-        $popUp.find('.p-ref-wrap').each((index, elem) => {
-            elem.udCb(newPerson)
-        })
     }
+
+    let blobInfo = null
     
     let fVFull = null
     let $popUp = bigPopUp(html, {
@@ -1357,6 +1364,14 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
             $editButton.hide()
             $downloadBtn.hide()
             $deleteBtn.hide()
+
+            if (toSaveAsPdf) {
+                $popUp.css({
+                    width: '100%',
+                    right: 'unset',
+                    left: '100%'
+                })
+            }
 
             api.getPDeatilInf({id}).then(({id, father, mother, spouse, fieldValues, siblings, children}) => {
                 fVFull = [...fieldValues]
@@ -1439,6 +1454,16 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                 fieldValues.forEach(fieldValue => {
                     $popUp.find('.row > .fields').append(gen$fDisplay(Object.assign(fieldValue, { pTypeAddonInf: {udCbIdx: udCbIdx + 1, zIndex: zIndex + 1} })))
                 })
+
+                if (toSaveAsPdf) {
+                    let $elem = $popUp.find('.pop-up > .content')
+
+                    domtoimage.toPng($elem[0], { bgcolor: 'white',
+                        style: {
+                            height: 'unset'
+                        }
+                    }).then(blob => { blobInfo = [blob, $elem.innerHeight(), $elem.innerWidth()] })
+                }
             })
         },
         clCb: () => {
@@ -1485,6 +1510,21 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false) {
                 click: () => puEditP(fVFull, id, udCbStack[udCbIdx + 1])
             }
         ]
+    })
+
+    if (!toSaveAsPdf) return Promise.resolve()
+
+    return new Promise(resolve => {
+        let deltaTime = 500
+        function checkBlob() {
+            if (blobInfo) {
+                $popUp.remove()
+                resolve(blobInfo)
+            } else {
+                setTimeout(checkBlob, deltaTime)
+            }
+        }
+        checkBlob()
     })
 }
 
@@ -1717,6 +1757,11 @@ function load(user) {
                 <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-user-plus"></use>
                 </svg> Thêm người thân
             </button>
+            <button type="button" class="btn btn-primary" style="margin-bottom: 12px; margin-right: 1rem;" id="save-pdf">
+                <svg class="icon">
+                <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-save"></use>
+                </svg> Tải tất cả thông tin thành PDF
+            </button>
             <button type="button" class="btn btn-primary" style="margin-bottom: 12px; margin-right: 1rem;" id="dl-backup">
                 <svg class="icon">
                 <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-cloud-download"></use>
@@ -1727,7 +1772,7 @@ function load(user) {
                 <use xlink:href="./resources/@coreui/icons/svg/free.svg#cil-cloud-upload"></use>
                 </svg> Nạp file sao lưu
             </button>
-            <input type="file" accept=".csv" hidden id="input-csv"/>
+            <input type="file" accept=".csv, .json" hidden id="input-csv"/>
             <table class="table border mb-0">
                 <thead class="table-light fw-semibold">
                 <tr class="align-middle">
@@ -1759,8 +1804,11 @@ function load(user) {
             </style>
         `)
 
+        let outerPeople = null
+
         function rfPPList() {
             api.getPPBsInf().then(people => {
+                outerPeople = people
                 $("#list-people").html('')
                 people.forEach(person => {
                     let {callname, gender, birthday, deathday, father, mother, avatar, spouse} = person
@@ -1834,7 +1882,8 @@ function load(user) {
                     URL.revokeObjectURL(link.href)
                 }
                 let t = new Date()
-                downloadData(data, `backup-QLGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}.csv`)
+                let ext = data.startsWith('{') ? 'json' : 'csv' 
+                downloadData(data, `backup-QLGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}.${ext}`)
                 rmLding()
             })
         })
@@ -1851,14 +1900,44 @@ function load(user) {
             reader.readAsText(file, "UTF-8");
             reader.onload = function (evt) {
                 let data = evt.target.result;
-                api.restore({data}).then(() => {
-                    rmLding()
-                    rfPPList()
+                api.restore({data}).then(({message}) => {
+                    if (message != 'Invalid data!') {
+                        window.location.href = window.location.href
+                    } else {
+                        popUpMessage('Dữ liệu không hợp lệ!')
+                        rmLding()
+                    }
                 })
             }
             reader.onerror = function (evt) {
                 rmLding()
             }
+        })
+
+        $('#save-pdf').click(() => {
+            let rmLding = popUpLoading()
+            Promise.all(outerPeople.map(person => puViewP(person, 0, pUViewPBsIdx, false, true))).then(blobs => {
+                let pdf = new jspdf.jsPDF("p", "mm", "a4")
+                let width = pdf.internal.pageSize.getWidth()
+                let height = pdf.internal.pageSize.getHeight()
+
+                for (let i = 0; i < blobs.length; i++) {
+                    if (i != 0 ) pdf.addPage()
+                    
+                    let imgWidth = width
+                    let imgHeight = blobs[i][1]*width/blobs[i][2]
+
+                    if (imgHeight > height) {
+                        imgHeight = height
+                        imgWidth = blobs[i][2]*height/blobs[i][1]
+                    }
+
+                    pdf.addImage(blobs[i][0], 'PNG', 0, 0, imgWidth, imgHeight)
+                }
+
+                pdf.save("QLGP.pdf")
+                rmLding()
+            })
         })
     }
     tPPMng() 
@@ -3095,7 +3174,7 @@ function load(user) {
                 return Math.round((new Date(y, m - 1, d).getTime() - nowDate.getTime())/(1000*60*60*24))
             }
             personInfos.forEach(person => {
-                if (person.birthday && person.birthday != '') {
+                if (person.birthday && person.birthday != '' && (!person.deathday || person.deathday == '')) {
                     let deltaDay = deltaDaysNow(person.birthday)
                     dateTransfer(person.birthday) 
 

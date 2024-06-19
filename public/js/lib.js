@@ -249,11 +249,11 @@ function bigPopUp(html, option) {
 }
 
 function popUpMessage(mes) {
-    popUp(mes, {
+    bigPopUp(mes, {
+        zIndex: 150000,
         style: {
-            width: '400px',
-            height: '300px',
-            'font-size': '20px'
+            height: '320px',
+            width: '480px'
         }
     })
 }
