@@ -1,6 +1,5 @@
 const database = require('../config/database');
 const { backupFamilyDataToCSV, restoreFamilyDataFromCSV, getAllBaseInfo } = require('./backup');
-const fs = require('fs');
 const sessions = {};
 
 const getPersonData = async (ids) => {
@@ -1318,45 +1317,50 @@ const deleteRelative = (request, response, next)=>{
 };
 
 const getStatistic = async (request, response, next)=>{
-    const sessionId = request.cookies.sessionId;
-    const userId = sessions[sessionId].userId;
-    //const userId=1;
-    const allPeople = await getAllBaseInfo(userId);
-    const parseDate = (dateString) => {
-        const [day, month, year] = dateString.split('/');
-        return new Date(year, month - 1, day);
-    };
-    let numMales = 0;
-    let numFemales = 0;
-    let ages = [];
-    const currentDate = new Date();
+    try {
+        const sessionId = request.cookies.sessionId;
+        const userId = sessions[sessionId].userId;
+        //const userId=1;
+        const allPeople = await getAllBaseInfo(userId);
+        const parseDate = (dateString) => {
+            const [day, month, year] = dateString.split('/');
+            return new Date(year, month - 1, day);
+        };
+        let numMales = 0;
+        let numFemales = 0;
+        let ages = [];
+        const currentDate = new Date();
 
-    allPeople.forEach(entry => {
-        const person = entry.fields;
-        if (person.gender === 'Nam') {
-            numMales++;
-        } else if (person.gender === 'Nữ') {
-            numFemales++;
-        }
+        allPeople.forEach(entry => {
+            const person = entry.fields;
+            if (person.gender === 'Nam') {
+                numMales++;
+            } else if (person.gender === 'Nữ') {
+                numFemales++;
+            }
 
-        // Calculate age
-        const birthday = parseDate(person.birthday);
-        const deathday = person.deathday ? parseDate(person.deathday) : currentDate;
-        const age = deathday.getFullYear() - birthday.getFullYear();
-        const monthDiff = deathday.getMonth() - birthday.getMonth();
-        const dayDiff = deathday.getDate() - birthday.getDate();
-        console.log(birthday,deathday);
-        if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-            ages.push(age - 1);
-        } else {
-            ages.push(age);
-        }
-    });
-    response.status(200).json({
-        numMales: numMales,
-        numFemales: numFemales,
-        ages: ages
-    });
+            // Calculate age
+            const birthday = parseDate(person.birthday);
+            const deathday = person.deathday ? parseDate(person.deathday) : currentDate;
+            const age = deathday.getFullYear() - birthday.getFullYear();
+            const monthDiff = deathday.getMonth() - birthday.getMonth();
+            const dayDiff = deathday.getDate() - birthday.getDate();
+            console.log(birthday,deathday);
+            if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+                ages.push(age - 1);
+            } else {
+                ages.push(age);
+            }
+        });
+        response.status(200).json({
+            numMales: numMales,
+            numFemales: numFemales,
+            ages: ages
+        });
+    } catch (error) {
+        console.error('Error in getStatistic:', error);
+        response.status(500).json({ error: 'Internal server error' });
+    }
 }
 
 module.exports = {

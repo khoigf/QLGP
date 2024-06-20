@@ -1,14 +1,12 @@
 require('dotenv').config();
 
 const express = require('express')
-const path = require('path');
 const cookieParser = require("cookie-parser")
 const createError = require('http-errors');
 const configViewEngine = require('./config/viewEngine');
 const webRoutes = require('./routes/web')
 const app = express() //app express
 const port = process.env.PORT || 8081 // port
-const hostname = process.env.HOST_NAME;
 var middleware = require('./middware/middware')
 
 //config template engine

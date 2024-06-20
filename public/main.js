@@ -1884,7 +1884,7 @@ function load(user) {
                     URL.revokeObjectURL(link.href)
                 }
                 let t = new Date()
-                let ext = data.startsWith('{') ? 'json' : 'csv' 
+                let ext = (data.startsWith('{') || data.startsWith('[')) ? 'json' : 'csv' 
                 downloadData(data, `backup-QLGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}.${ext}`)
                 rmLding()
             })
