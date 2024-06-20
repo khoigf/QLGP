@@ -1266,6 +1266,7 @@ const postRestore = async (request, response, next)=>{
         const sessionId = request.cookies.sessionId;
         const newUserId = sessions[sessionId].userId;
         const data = request.body.data;
+        console.log(data);
         await restoreFamilyDataFromCSV(data, newUserId);
         response.status(200).json({ message: 'OK' });
     } catch (error) {

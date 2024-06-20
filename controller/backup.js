@@ -148,33 +148,7 @@ async function personExists(ownerUserId, searchString) {
 async function backupFamilyDataToCSV(userId) {
     try {
         const familyData = await getAllBaseInfo(userId);
-
-        const compactData = familyData.map(entry => ({
-            id: entry.person.id,
-            callname: entry.fields.callname,
-            avatar: entry.fields.avatar || null,
-            birthday: entry.fields.birthday || null,
-            deathday: entry.fields.deathday || null,
-            gender: entry.fields.gender,
-            isStandForUser: entry.person.isStandForUser,
-            spouse: entry.relatedPersons.spouse ? {
-                id: entry.relatedPersons.spouse.id,
-                callname: entry.relatedPersons.spouse.callname,
-                avatar: entry.relatedPersons.spouse.avatar || null
-            } : null,
-            father: entry.relatedPersons.father ? {
-                id: entry.relatedPersons.father.id,
-                callname: entry.relatedPersons.father.callname,
-                avatar: entry.relatedPersons.father.avatar || null
-            } : null,
-            mother: entry.relatedPersons.mother ? {
-                id: entry.relatedPersons.mother.id,
-                callname: entry.relatedPersons.mother.callname,
-                avatar: entry.relatedPersons.mother.avatar || null
-            } : null
-        }));
-
-        return JSON.stringify(compactData);
+        return JSON.stringify(familyData);
     } catch (error) {
         throw error;
     }
