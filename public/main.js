@@ -820,22 +820,22 @@ function gen$fInput({id, code, type, placeholder, name, description, isMultiValu
             case 'STRING':
                 $element = $(`<div class="col-xl-4 col-lg-6 col-md-8">
                     <label for="${labelId}" class="form-label">${name}${code == 'callname' ? '<span style="color: red;"> *</span>' : ''}</label>
-                    <input type="text" class="form-control" id="${labelId}" ${placeholder ? `placeholder="${placeholder}"` : ''} ${value ? `value="${value}"` : ''}>
+                    <textarea class="form-control" id="${labelId}" rows="${code == 'callname' ? 1 : 3}" ${placeholder ? `placeholder="${placeholder}"` : ''}>${value ? value : ''}</textarea>
                     <div class="invalid-feedback"></div>
                 </div>`)
-                $element.find('input').keydown(() => {
+                $element.find('textarea').keydown(() => {
                     $element.find('.invalid-feedback').hide()
-                    $element.find('input').removeClass('is-invalid')
+                    $element.find('textarea').removeClass('is-invalid')
                 })
                 validate = () => {
-                    if (code == 'callname' && $element.find('input').val() == '') {
+                    if (code == 'callname' && $element.find('textarea').val() == '') {
                         $element.find('.invalid-feedback').show().html('Không được để trống thông tin này!')
-                        $element.find('input').addClass('is-invalid')
+                        $element.find('textarea').addClass('is-invalid')
                         return false
                     }
                     return true
                 }
-                getValue = () => $element.find('input').val()
+                getValue = () => $element.find('textarea').val()
                 valueChanged = () => value != getValue()
                 break
             case 'DATE':
@@ -1540,7 +1540,12 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
     if (isMultiValue) {
         switch (type) {
             case 'STRING':
-                $element = $(`<div style="padding: 0.7rem;" class="col-xl-6 col-lg-12 col-md-6">
+                let maxLength = (value && value != '') ? Math.max(...value.split(mulValDel).map(v => v.length)) : 0
+                let cl = 'col-xl-6 col-lg-12 col-md-6'
+                if (maxLength > 400) {
+                    cl = 'col-12'
+                }
+                $element = $(`<div style="padding: 0.7rem;" class="${cl}">
                     <div class="card" style="">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><h5 style="margin-top: 0.5rem;">${name}</h5></li>
@@ -1646,13 +1651,17 @@ function gen$fDisplay({id, code, type, placeholder, name, isMultiValue, value, p
     else {
         switch (type) {
             case 'STRING':
-                $element = $(`<div class="col-xl-6 col-lg-12 col-md-6" style="padding: 0.7rem;">
+                let cl = 'col-xl-6 col-lg-12 col-md-6'
+                if (value.length > 400) {
+                    cl = 'col-12'
+                }
+                $element = $(`<div class="${cl}" style="padding: 0.7rem;">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">${name}</h5>
                             ${value == '' ?
                                 '<h6 class="text-muted">Không có giá trị!</h6>' : 
-                                `<p class="card-text">${value}</p>`
+                                `<p class="card-text">${value.replaceAll('\n', '<br>')}</p>`
                             }
                         </div>
                     </div>
@@ -1884,7 +1893,7 @@ function load(user) {
                     URL.revokeObjectURL(link.href)
                 }
                 let t = new Date()
-                let ext = data.startsWith('{') ? 'json' : 'csv' 
+                let ext = [data.startsWith('{') || data.startsWith('[')] ? 'json' : 'csv' 
                 downloadData(data, `backup-QLGP_${t.getDate()}-${t.getMonth() + 1}-${t.getFullYear()}.${ext}`)
                 rmLding()
             })
