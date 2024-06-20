@@ -110,10 +110,31 @@ async function insertPerson(person) {
 }
 
 async function insertFieldValue(personId, fieldDefinitionId, fieldDefinitionCode, value ) {
-    await executeQuery(
-        `INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode, value) VALUES (?, ?, ?, ?)`,
-        [personId, fieldDefinitionId, fieldDefinitionCode, value]
-    );
+    try {
+        // Check if the entry already exists
+        const existingEntries = await executeQuery(
+            'SELECT * FROM fieldvalue WHERE personId = ? AND fieldDefinitionId = ? AND fieldDefinitionCode = ?',
+            [personId, fieldDefinitionId, fieldDefinitionCode]
+        );
+
+        if (existingEntries.length > 0) {
+            // Update the existing entry if it exists
+            await executeQuery(
+                'UPDATE fieldvalue SET value = ? WHERE personId = ? AND fieldDefinitionId = ? AND fieldDefinitionCode = ?',
+                [value, personId, fieldDefinitionId, fieldDefinitionCode]
+            );
+            // console.log('Entry updated successfully');
+        } else {
+            // Insert a new entry if it does not exist
+            await executeQuery(
+                'INSERT INTO fieldvalue (personId, fieldDefinitionId, fieldDefinitionCode, value) VALUES (?, ?, ?, ?)',
+                [personId, fieldDefinitionId, fieldDefinitionCode, value]
+            );
+            console.log('Entry inserted successfully');
+        }
+    } catch (error) {
+        console.error('Error inserting/updating entry:', error);
+    }
 }
 
 async function personExists(ownerUserId, searchString) {
@@ -127,81 +148,15 @@ async function personExists(ownerUserId, searchString) {
 async function backupFamilyDataToCSV(userId) {
     try {
         const familyData = await getAllBaseInfo(userId);
-        let csvData = 'PersonID,Callname,Avatar,Birthday,Deathday,Gender,isStandForUser,SpouseID,SpouseName,FatherID,FatherName,MotherID,MotherName\n';
-        familyData.forEach(entry => {
-            const person = entry.person;
-            const fields = entry.fields;
-            fields.avatar=fields.avatar?fields.avatar.replaceAll(',','###'):null;
-            const relatedPersons = entry.relatedPersons;
-            csvData += `${person.id},"${fields.callname}","${fields.avatar}","${fields.birthday}","${fields.deathday}","${fields.gender}","${person.isStandForUser}",`;
-            if (relatedPersons.spouse) {
-                csvData += `${relatedPersons.spouse.id},"${relatedPersons.spouse.callname}",`;
-            } else {
-                csvData += ',,';
-            }
-            if (relatedPersons.father) {
-                csvData += `${relatedPersons.father.id},"${relatedPersons.father.callname}",`;
-            } else {
-                csvData += ',,';
-            }
-
-            if (relatedPersons.mother) {
-                csvData += `${relatedPersons.mother.id},"${relatedPersons.mother.callname}",\n`;
-            } else {
-                csvData += ',,\n';
-            }
-        });
-
-        //const filePath = `backup_family_${userId}.csv`;
-        //fs.writeFileSync(filePath, csvData);
-
-        return csvData;
+        return JSON.stringify(familyData);
     } catch (error) {
         throw error;
     }
 }
 
 async function restoreFamilyDataFromCSV(data, newUserId) {
-    const results = [];
-    const rows = data.split('\n').filter(row => row.trim() !== ''); // Split data into rows and filter out empty lines
-    const headers = rows.shift().split(','); // Get the headers
-
-    rows.forEach(row => {
-        const columns = row.split(','); // Split each row into columns
-        const personId = parseInt(columns[0]);
-        const callname = columns[1].replace(/"/g, '');
-        const avatar = columns[2]?columns[2].replace(/"/g, '').replaceAll('###',','):columns[2];
-        const birthday = columns[3].replace(/"/g, '');
-        const deathday = columns[4].replace(/"/g, '');
-        const gender = columns[5].replace(/"/g, '');
-        const isStandForUser = columns[6].replace(/"/g, '');
-        const spouseId = columns[7] ? parseInt(columns[7]) : null;
-        const spouseName = columns[8].replace(/"/g, '');
-        const fatherId = columns[9] ? parseInt(columns[9]) : null;
-        const fatherName = columns[10].replace(/"/g, '');
-        const motherId = columns[11] ? parseInt(columns[11]) : null;
-        const motherName = columns[12].replace(/"/g, '');
-        results.push({
-            person: {
-                id: personId,
-                isStandForUser: isStandForUser
-            },
-            fields: {
-                avatar: avatar,
-                birthday: birthday,
-                callname: callname,
-                deathday: deathday,
-                gender: gender
-            },
-            relatedPersons: {
-                spouse: { id: spouseId, callname: spouseName },
-                father: { id: fatherId, callname: fatherName },
-                mother: { id: motherId, callname: motherName }
-            }
-        });
-    });
-
-    for (const entry of results) {
+    const familyData = JSON.parse(data);
+    for (const entry of familyData) {
         const person = entry.person;
         const fields = entry.fields;
         const relatedPersons = entry.relatedPersons;
@@ -243,14 +198,20 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
         });
         await insertFieldValue(personId, 1, "callname", fields.callname);
         await insertFieldValue(personId, 2, "gender", fields.gender);
-        if (!relatedPersons.spouse.id) {
+        if (relatedPersons.spouse) {
             await insertFieldValue(personId, 3, "spouse", relatedPersons.spouse.id);
+        }else{
+            await insertFieldValue(personId, 3, "spouse", '');
         }
-        if (!relatedPersons.father.id) {
+        if (relatedPersons.father) {
             await insertFieldValue(personId, 4, "father", relatedPersons.father.id);
+        }else{
+            await insertFieldValue(personId, 4, "father", '');
         }
-        if (!relatedPersons.mother.id) {
+        if (relatedPersons.mother) {
             await insertFieldValue(personId, 5, "mother", relatedPersons.mother.id);
+        }else{
+            await insertFieldValue(personId, 5, "mother", '');
         }
         if(fields.birthday==='null'){
             await insertFieldValue(personId, 6, "birthday", '');
@@ -268,13 +229,13 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
             await insertFieldValue(personId, 8, "avatar", fields.avatar);
         }
     }
-    for (const entry of results) {
+    for (const entry of familyData) {
         const person = entry.person;
         const fields = entry.fields;
         const relatedPersons = entry.relatedPersons;
         const searchString = fields.callname + " " + fields.gender;
         let personId = await personExists(newUserId, searchString);
-        if (relatedPersons.spouse.id) {
+        if (relatedPersons.spouse) {
             const rows = await executeQuery(
                 `SELECT p.*
                 FROM person p
@@ -284,7 +245,7 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
             );
             await insertFieldValue(personId, 3, "spouse", rows.length > 0 ? rows[0].id : null);
         }
-        if (relatedPersons.father.id) {
+        if (relatedPersons.father) {
             const rows = await executeQuery(
                 `SELECT p.*
                 FROM person p
@@ -294,7 +255,7 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
             );
             await insertFieldValue(personId, 4, "father", rows.length > 0 ? rows[0].id : null);
         }
-        if (relatedPersons.mother.id) {
+        if (relatedPersons.mother) {
             const rows = await executeQuery(
                 `SELECT p.*
                 FROM person p
@@ -305,7 +266,7 @@ async function restoreFamilyDataFromCSV(data, newUserId) {
             await insertFieldValue(personId, 5, "mother", rows.length > 0 ? rows[0].id : null);
         }
     }
-    console.log('CSV file successfully processed');
+    console.log('Backup file successfully processed');
 }
 
 module.exports = { backupFamilyDataToCSV, restoreFamilyDataFromCSV ,getAllBaseInfo};
