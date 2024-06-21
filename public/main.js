@@ -1244,7 +1244,7 @@ function puEditP(fieldValues, personId, udSuccCb) {
 }
 
 let udCbStack = []
-function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false, toSaveAsPdf = false) {
+function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false, toSaveAsPdf = false, pdfMetaData = {}) {
     let {callname, gender, birthday, deathday, avatar, id, isStandForUser} = person
     let showedPId = id
     let html = `
@@ -1450,6 +1450,15 @@ function puViewP(person, udCbIdx, zIndex = pUViewPBsIdx, firstTime = false, toSa
                         }
                     })
                 })
+
+                if (toSaveAsPdf) {
+                    fieldValues = [{
+                        type: 'STRING',
+                        name: 'Đời thứ', 
+                        isMultiValue: false,
+                        value: String(pdfMetaData.n)
+                    }, ...fieldValues]
+                }
 
                 fieldValues.forEach(fieldValue => {
                     $popUp.find('.row > .fields').append(gen$fDisplay(Object.assign(fieldValue, { pTypeAddonInf: {udCbIdx: udCbIdx + 1, zIndex: zIndex + 1} })))
@@ -1815,11 +1824,8 @@ function load(user) {
             </style>
         `)
 
-        let outerPeople = null
-
         function rfPPList() {
             api.getPPBsInf().then(people => {
-                outerPeople = people
                 $("#list-people").html('')
                 people.forEach(person => {
                     let {callname, gender, birthday, deathday, father, mother, avatar, spouse} = person
@@ -1927,27 +1933,74 @@ function load(user) {
 
         $('#save-pdf').click(() => {
             let rmLding = popUpLoading()
-            Promise.all(outerPeople.map(person => puViewP(person, 0, pUViewPBsIdx, false, true))).then(blobs => {
-                let pdf = new jspdf.jsPDF("p", "mm", "a4")
-                let width = pdf.internal.pageSize.getWidth()
-                let height = pdf.internal.pageSize.getHeight()
 
-                for (let i = 0; i < blobs.length; i++) {
-                    if (i != 0 ) pdf.addPage()
+            api.drawFTree({level: 2}).then(({ancestor}) => {
+                let toGetInfo = []
+                let trlGroups = [[ancestor]]
+                let currGroup = 0
+
+                while (currGroup < trlGroups.length) {
+                    let n = currGroup + 1
+                    let toTravelsal = trlGroups[currGroup]
+                    let currIndex = 0
                     
-                    let imgWidth = width
-                    let imgHeight = blobs[i][1]*width/blobs[i][2]
+                    while (currIndex < toTravelsal.length) {
+                        let a = toTravelsal[currIndex]
+                        currIndex++
 
-                    if (imgHeight > height) {
-                        imgHeight = height
-                        imgWidth = blobs[i][2]*height/blobs[i][1]
+                        let csdSIds = new Set()
+
+                        toGetInfo.push([a.id, n])
+                        if (a.spouse?.id) {
+                            toGetInfo.push([a.spouse.id, n])
+                            csdSIds.add(a.spouse.id)
+                        }
+                        if (a.children && Array.isArray(a.children)) {
+                            a.children.forEach(({child, partner}) => {
+                                if (partner?.id && !csdSIds.has(partner.id)) {
+                                    csdSIds.add(partner.id)
+                                    toGetInfo.push([partner.id, n])
+                                }
+
+                                if (currGroup + 1 >= trlGroups.length) {
+                                    trlGroups.push([])
+                                }
+
+                                trlGroups[currGroup + 1].push(child)
+                            })
+                        }
                     }
 
-                    pdf.addImage(blobs[i][0], 'PNG', 0, 0, imgWidth, imgHeight)
+                    currGroup++
                 }
 
-                pdf.save("QLGP.pdf")
-                rmLding()
+                Promise.all(toGetInfo.map(([personId, n]) => new Promise(resolve => {
+                    api.getPBsInf({id: personId}).then(person => {
+                        puViewP(person, 0, pUViewPBsIdx, false, true, { n }).then(resolve)
+                    })
+                })))
+                .then(blobs => {
+                    let pdf = new jspdf.jsPDF("p", "mm", "a4")
+                    let width = pdf.internal.pageSize.getWidth()
+                    let height = pdf.internal.pageSize.getHeight()
+
+                    for (let i = 0; i < blobs.length; i++) {
+                        if (i != 0 ) pdf.addPage()
+                        
+                        let imgWidth = width
+                        let imgHeight = blobs[i][1]*width/blobs[i][2]
+    
+                        if (imgHeight > height) {
+                            imgHeight = height
+                            imgWidth = blobs[i][2]*height/blobs[i][1]
+                        }
+    
+                        pdf.addImage(blobs[i][0], 'PNG', 0, 0, imgWidth, imgHeight)
+                    }
+    
+                    pdf.save("QLGP.pdf")
+                    rmLding()
+                })
             })
         })
     }
