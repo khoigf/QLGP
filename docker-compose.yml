@@ -6,6 +6,8 @@ services:
         COPY ./init.sql /docker-entrypoint-initdb.d/init.sql
     environment:
       - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - mysql-data:/var/lib/mysql
     healthcheck:
       test: mysqladmin ping --silent
   backend:
@@ -28,4 +30,3 @@ services:
     depends_on:
       database:
         condition: service_healthy
-
