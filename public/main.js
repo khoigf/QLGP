@@ -3218,8 +3218,24 @@ function load(user) {
                     let [ld, lm, ly] = date.split('/').map(i => Number(i))
                     if (lm < lmnow || (lm == lmnow && ld < ldnow)) ly = lynow + 1
                     else ly = lynow
-                    date = `${ld}/${lm}/${ly}`
-                    date = DateLib.lDateToDate(date)
+                    date = null
+                    while (!date) {
+                        try {
+                            date = `${ld}/${lm}/${ly}`
+                            date = DateLib.lDateToDate(date)
+                        } catch {
+                            date = null
+                            ld--
+                            if (ld == 0) {
+                                ld = 32
+                                lm--
+                                if (lm == 0) {
+                                    lm = 12
+                                    ly--
+                                }
+                            }
+                        }
+                    }
                     let [d, m, y] = date.split('/').map(i => Number(i))
                     score[date] = y*4000 + m*20 + d
                     return date
