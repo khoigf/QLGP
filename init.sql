@@ -1,15 +1,15 @@
 
-CREATE DATABASE QLGP;
+CREATE DATABASE IF NOT EXISTS QLGP;
 
 USE QLGP;
 
-CREATE TABLE account (
+CREATE TABLE IF NOT EXISTS account (
     userId int NOT NULL PRIMARY KEY AUTO_INCREMENT,
     username varchar(12) NOT NULL,
     password varchar(12) NOT NULL
 );
 
-CREATE TABLE person (
+CREATE TABLE IF NOT EXISTS person (
     id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
     ownerUserId int NOT NULL,
     searchString text,
@@ -17,7 +17,7 @@ CREATE TABLE person (
     FOREIGN KEY (ownerUserId) REFERENCES account (userId)
 );
 
-CREATE TABLE fielddefinition (
+CREATE TABLE IF NOT EXISTS fielddefinition (
     id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
     code varchar(30),
     name nvarchar(100) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE fielddefinition (
     isForAllPeopleOfUserId int
 );
 
-CREATE TABLE fieldvalue (
+CREATE TABLE IF NOT EXISTS fieldvalue (
     personId int NOT NULL,
     fieldDefinitionId int NOT NULL,
     fieldDefinitionCode varchar(30),
@@ -38,7 +38,7 @@ CREATE TABLE fieldvalue (
     PRIMARY KEY (personId, fieldDefinitionId)
 );
 
-CREATE TABLE upcomingeventtargetinfo (
+CREATE TABLE IF NOT EXISTS upcomingeventtargetinfo (
     userId int NOT NULL PRIMARY KEY,
     type varchar(50) NOT NULL,
     numGenerationsAbove int,
@@ -48,8 +48,19 @@ CREATE TABLE upcomingeventtargetinfo (
     FOREIGN KEY (userId) REFERENCES account (userId)
 );
 
-INSERT INTO fielddefinition (code, name, description, type, isMultivalue, isForAllPeople, isForAllPeopleOfUserId)
-VALUES ('callname', N'Tên gọi', N'Đây là tên được hiển thị trong hầu hết tất cả các chức năng của trang web (vẽ biểu đồ gia phả, sự kiện sắp tới,...)', 'STRING', 0, 1, -1),
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_fielddefinition (
+    id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    code varchar(30),
+    name nvarchar(100) NOT NULL,
+    description nvarchar(500),
+    type varchar(20) NOT NULL,
+    isMultivalue int NOT NULL,
+    isForAllPeople int NOT NULL,
+    isForAllPeopleOfUserId int
+);
+
+INSERT INTO temp_fielddefinition (code, name, description, type, isMultivalue, isForAllPeople, isForAllPeopleOfUserId) VALUES
+    ('callname', N'Tên gọi', N'Đây là tên được hiển thị trong hầu hết tất cả các chức năng của trang web (vẽ biểu đồ gia phả, sự kiện sắp tới,...)', 'STRING', 0, 1, -1),
     ('gender', N'Giới tính', N'Giới tính', 'STRING', 0, 1, -1),
     ('spouse', N'Vợ/Chồng', N'Vợ hoặc là chồng, nói chung đây là ý chung nhân!', 'PERSON', 0, 1, -1),
     ('father', N'Bố', N'Bố ruột', 'PERSON', 0, 1, -1),
@@ -58,3 +69,5 @@ VALUES ('callname', N'Tên gọi', N'Đây là tên được hiển thị trong 
     ('deathday', N'Ngày mất', N'Ngày mất', 'LUNAR_DATE', 0, 1, -1),
     ('avatar', N'Ảnh đại diện', N'Ảnh đại diện trực quan cho đối tượng trong hầu hết các chức năng của trang web', 'IMAGE', 0, 1, -1);
 
+INSERT INTO fielddefinition (code, name, description, type, isMultivalue, isForAllPeople, isForAllPeopleOfUserId)
+SELECT code, name, description, type, isMultivalue, isForAllPeople, isForAllPeopleOfUserId FROM temp_fielddefinition tf WHERE NOT EXISTS (SELECT * FROM fielddefinition f WHERE tf.code = f.code);
